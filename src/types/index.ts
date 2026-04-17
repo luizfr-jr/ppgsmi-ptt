@@ -1,0 +1,85 @@
+export type UserRole = 'ALUNO' | 'ORIENTADOR' | 'COORDENACAO'
+export type TemplateStatus = 'RASCUNHO' | 'ENVIADO' | 'APROVADO' | 'REVISAO'
+
+export interface User {
+  id: string
+  email: string
+  name: string | null
+  role: UserRole
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Template {
+  id: string
+  status: TemplateStatus
+  createdAt: Date
+  updatedAt: Date
+  aluno: string | null
+  orientador: string | null
+  bancaAvaliadora: string | null
+  data: string | null
+  tituloPt: string | null
+  tituloEn: string | null
+  linhaPesquisa: string | null
+  participantes: string | null
+  objetivo: string | null
+  finalidade: string | null
+  referencialTeorico: string | null
+  descricaoProduto: string | null
+  relevancia: string | null
+  observacoes: string | null
+  impactoNivel: string | null
+  impactoDemanda: string | null
+  impactoObjetivo: string | null
+  impactoArea: string | null
+  impactoTipo: string | null
+  impactoTipoDesc: string | null
+  replicabilidade: string | null
+  replicabilidadeDesc: string | null
+  abrangencia: string | null
+  complexidade: string | null
+  complexidadeDesc: string | null
+  inovacao: string | null
+  inovacaoDesc: string | null
+  setorBeneficiado: string | null
+  vinculoPDI: string | null
+  fomento: string | null
+  fomentoCodigo: string | null
+  propriedadeIntelectual: string | null
+  estagioTecnologia: string | null
+  transferenciaConhecimento: string | null
+  urlProduto: string | null
+  divulgacao: string | null
+  anexosDesc: string | null
+  studentId: string
+  advisorId: string | null
+  student?: User
+  advisor?: User | null
+  comments?: Comment[]
+}
+
+export interface Comment {
+  id: string
+  content: string
+  fieldRef: string | null
+  createdAt: Date
+  authorId: string
+  templateId: string
+  author?: User
+}
+
+export interface AuthSession {
+  user: {
+    id: string
+    email: string
+    name: string | null
+    role: UserRole
+  }
+}
+
+export interface ApiResponse<T = unknown> {
+  success: boolean
+  data?: T
+  error?: string
+}

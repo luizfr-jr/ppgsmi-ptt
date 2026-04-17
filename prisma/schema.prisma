@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      String   @default("ALUNO") // ALUNO | ORIENTADOR | COORDENACAO
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  templates      Template[]  @relation("StudentTemplates")
+  advisedTemplates Template[] @relation("AdvisorTemplates")
+  comments       Comment[]
+  otpCodes       OtpCode[]
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  code      String
+  email     String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [email], references: [email])
+}
+
+model Template {
+  id        String   @id @default(cuid())
+  status    String   @default("RASCUNHO") // RASCUNHO | ENVIADO | APROVADO | REVISAO
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Cover page
+  aluno           String?
+  orientador      String?
+  bancaAvaliadora String?
+  data            String?
+
+  // Field 1
+  tituloPt        String?
+  tituloEn        String?
+
+  // Field 2
+  linhaPesquisa   String? // SAUDE_MATERNA | GESTAO_REDE
+
+  // Field 3
+  participantes   String?
+
+  // Field 4
+  objetivo        String?
+
+  // Field 5 (max 255)
+  finalidade      String?
+
+  // Field 6
+  referencialTeorico String?
+
+  // Field 7
+  descricaoProduto   String?
+
+  // Field 8
+  relevancia         String?
+
+  // Field 9
+  observacoes        String?
+
+  // Field 10
+  impactoNivel       String? // ALTO | MEDIO | BAIXO
+
+  // Field 11
+  impactoDemanda     String? // ESPONTANEO | CONCORRENCIA | CONTRATADA
+
+  // Field 12
+  impactoObjetivo    String? // EXPERIMENTAL | SOLUCAO_PROBLEMA | SEM_FOCO
+
+  // Field 13 (multiple - stored as JSON)
+  impactoArea        String? // JSON array
+
+  // Field 14
+  impactoTipo        String? // REAL | POTENCIAL
+  impactoTipoDesc    String?
+
+  // Field 15
+  replicabilidade    String? // SIM | NAO
+  replicabilidadeDesc String?
+
+  // Field 16
+  abrangencia        String? // INTERNACIONAL | NACIONAL | REGIONAL | LOCAL
+
+  // Field 17
+  complexidade       String? // ALTA | MEDIA | BAIXA
+  complexidadeDesc   String?
+
+  // Field 18
+  inovacao           String? // ALTO | MEDIO | BAIXO | SEM
+  inovacaoDesc       String?
+
+  // Field 19 (multiple - stored as JSON)
+  setorBeneficiado   String? // JSON array
+
+  // Field 20
+  vinculoPDI         String? // SIM | NAO
+
+  // Field 21
+  fomento            String? // FINANCIAMENTO | COOPERACAO
+  fomentoCodigo      String?
+
+  // Field 22
+  propriedadeIntelectual String?
+
+  // Field 23
+  estagioTecnologia  String? // PILOTO | FINALIZADO | TESTE
+
+  // Field 24
+  transferenciaConhecimento String? // SIM | NAO
+
+  // Field 25
+  urlProduto         String?
+
+  // Field 26
+  divulgacao         String?
+
+  // Field 27
+  anexosDesc         String?
+
+  // Relations
+  studentId    String
+  advisorId    String?
+  student      User     @relation("StudentTemplates", fields: [studentId], references: [id])
+  advisor      User?    @relation("AdvisorTemplates", fields: [advisorId], references: [id])
+  comments     Comment[]
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  content    String
+  fieldRef   String?  // which field the comment refers to
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  authorId   String
+  templateId String
+  author     User     @relation(fields: [authorId], references: [id])
+  template   Template @relation(fields: [templateId], references: [id])
+}

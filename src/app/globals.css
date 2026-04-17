@@ -1,0 +1,107 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --ninma-teal: #5fc3ad;
+    --ninma-purple: #756fb3;
+    --ninma-orange: #f9a870;
+    --ninma-pink: #f05a72;
+  }
+
+  * {
+    @apply border-gray-200;
+  }
+
+  body {
+    @apply bg-ninma-gray-light text-ninma-dark font-sans;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-ninma-teal hover:bg-ninma-teal-dark text-white font-medium py-2.5 px-6 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-ninma-purple hover:bg-ninma-purple-dark text-white font-medium py-2.5 px-6 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-outline {
+    @apply border-2 border-ninma-teal text-ninma-teal hover:bg-ninma-teal hover:text-white font-medium py-2.5 px-6 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-danger {
+    @apply bg-ninma-pink hover:bg-ninma-pink-dark text-white font-medium py-2.5 px-6 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl shadow-sm border border-gray-100 p-6;
+  }
+
+  .input {
+    @apply w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ninma-teal focus:border-transparent transition-all duration-200 bg-white;
+  }
+
+  .textarea {
+    @apply w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ninma-teal focus:border-transparent transition-all duration-200 bg-white resize-y min-h-[100px];
+  }
+
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-1.5;
+  }
+
+  .field-number {
+    @apply inline-flex items-center justify-center w-7 h-7 rounded-full bg-ninma-teal text-white text-xs font-bold mr-2 flex-shrink-0;
+  }
+
+  .section-title {
+    @apply flex items-center text-base font-semibold text-ninma-dark mb-4;
+  }
+
+  .radio-option {
+    @apply flex items-center gap-2 cursor-pointer;
+  }
+
+  .radio-input {
+    @apply w-4 h-4 text-ninma-teal focus:ring-ninma-teal border-gray-300;
+  }
+
+  .badge-rascunho {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600;
+  }
+
+  .badge-enviado {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-ninma-teal-light text-ninma-teal-dark;
+  }
+
+  .badge-revisao {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-ninma-orange-light text-ninma-orange-dark;
+  }
+
+  .badge-aprovado {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700;
+  }
+}
+
+/* Scrollbar customization */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: #5fc3ad;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4aaa94;
+}
