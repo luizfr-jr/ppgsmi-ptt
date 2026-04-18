@@ -309,17 +309,45 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
   return chunks
 }
 
-// Pre-fetch image as base64 data URL to avoid CORS issues with Supabase Storage
+// Fetch image and convert to JPEG via canvas (ensures react-pdf compatibility
+// and avoids CORS issues — blob URLs are treated as same-origin by canvas)
 async function urlToDataUrl(url: string): Promise<string | null> {
   try {
     const res = await fetch(url)
     if (!res.ok) return null
     const blob = await res.blob()
+    const objectUrl = URL.createObjectURL(blob)
+
     return new Promise(resolve => {
-      const reader = new FileReader()
-      reader.onloadend = () => resolve(reader.result as string)
-      reader.onerror = () => resolve(null)
-      reader.readAsDataURL(blob)
+      const img = new window.Image()
+      img.onload = () => {
+        try {
+          // Cap dimensions to avoid memory issues in the PDF renderer
+          const MAX_DIM = 1600
+          let w = img.naturalWidth
+          let h = img.naturalHeight
+          if (w > MAX_DIM || h > MAX_DIM) {
+            const scale = MAX_DIM / Math.max(w, h)
+            w = Math.round(w * scale)
+            h = Math.round(h * scale)
+          }
+          const canvas = document.createElement('canvas')
+          canvas.width = w
+          canvas.height = h
+          const ctx = canvas.getContext('2d')!
+          ctx.drawImage(img, 0, 0, w, h)
+          URL.revokeObjectURL(objectUrl)
+          resolve(canvas.toDataURL('image/jpeg', 0.82))
+        } catch {
+          URL.revokeObjectURL(objectUrl)
+          resolve(null)
+        }
+      }
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl)
+        resolve(null)
+      }
+      img.src = objectUrl
     })
   } catch {
     return null
