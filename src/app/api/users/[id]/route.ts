@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { getSession, hasMinRole } from '@/lib/auth'
-import { UserRole } from '@/types'
+import { getSession } from '@/lib/auth'
 
-const VALID_ROLES: UserRole[] = ['ALUNO', 'ORIENTADOR', 'COORDENACAO', 'SUPERADMIN']
+const VALID_ROLES = ['ALUNO', 'ORIENTADOR', 'COORDENACAO', 'SUPERADMIN']
+const CAN_MANAGE = ['COORDENACAO', 'SUPERADMIN']
 
 type Props = { params: Promise<{ id: string }> }
 
 /** PATCH /api/users/[id] — update user role or name (COORDENACAO+) */
 export async function PATCH(req: NextRequest, { params }: Props) {
   const session = await getSession()
-  if (!session || !hasMinRole(session.user.role as UserRole, 'COORDENACAO')) {
+  if (!session || !CAN_MANAGE.includes(session.user.role)) {
     return NextResponse.json({ success: false, error: 'Sem permissão' }, { status: 403 })
   }
 
@@ -24,13 +24,12 @@ export async function PATCH(req: NextRequest, { params }: Props) {
       return NextResponse.json({ success: false, error: 'Papel inválido' }, { status: 400 })
     }
 
-    // Only SUPERADMIN can assign or remove SUPERADMIN role
-    if ((role === 'SUPERADMIN' || (await prisma.user.findUnique({ where: { id }, select: { role: true } }))?.role === 'SUPERADMIN')
-      && session.user.role !== 'SUPERADMIN') {
-      return NextResponse.json({ success: false, error: 'Sem permissão para alterar SUPERADMIN' }, { status: 403 })
+    // Only SUPERADMIN can assign SUPERADMIN role
+    if (role === 'SUPERADMIN' && session.user.role !== 'SUPERADMIN') {
+      return NextResponse.json({ success: false, error: 'Sem permissão para atribuir SUPERADMIN' }, { status: 403 })
     }
 
-    // Can't demote yourself
+    // Can't change your own role
     if (id === session.user.id && role && role !== session.user.role) {
       return NextResponse.json({ success: false, error: 'Não é possível alterar seu próprio papel' }, { status: 400 })
     }

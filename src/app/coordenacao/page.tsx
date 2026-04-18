@@ -1,12 +1,13 @@
 import { redirect } from 'next/navigation'
-import { getSession, hasMinRole } from '@/lib/auth'
+import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { CoordDashboard } from './CoordDashboard'
-import { UserRole } from '@/types'
+
+const ALLOWED = ['COORDENACAO', 'SUPERADMIN']
 
 export default async function CoordenacaoPage() {
   const session = await getSession()
-  if (!session || !hasMinRole(session.user.role as UserRole, 'COORDENACAO')) redirect('/')
+  if (!session || !ALLOWED.includes(session.user.role)) redirect('/')
 
   const templates = await prisma.template.findMany({
     include: {

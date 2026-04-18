@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { getSession, hasMinRole } from '@/lib/auth'
-import { UserRole } from '@/types'
+import { getSession } from '@/lib/auth'
 
-const VALID_ROLES: UserRole[] = ['ALUNO', 'ORIENTADOR', 'COORDENACAO', 'SUPERADMIN']
+const VALID_ROLES = ['ALUNO', 'ORIENTADOR', 'COORDENACAO', 'SUPERADMIN']
+const CAN_LIST = ['ORIENTADOR', 'COORDENACAO', 'SUPERADMIN']
+const CAN_MANAGE = ['COORDENACAO', 'SUPERADMIN']
 
 /** GET /api/users — list users (ORIENTADOR+) */
 export async function GET(req: NextRequest) {
   const session = await getSession()
-  if (!session || !hasMinRole(session.user.role as UserRole, 'ORIENTADOR')) {
+  if (!session || !CAN_LIST.includes(session.user.role)) {
     return NextResponse.json({ success: false, error: 'Sem permissão' }, { status: 403 })
   }
 
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
 /** POST /api/users — create/pre-register user (COORDENACAO+) */
 export async function POST(req: NextRequest) {
   const session = await getSession()
-  if (!session || !hasMinRole(session.user.role as UserRole, 'COORDENACAO')) {
+  if (!session || !CAN_MANAGE.includes(session.user.role)) {
     return NextResponse.json({ success: false, error: 'Sem permissão' }, { status: 403 })
   }
 

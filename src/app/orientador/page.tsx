@@ -1,12 +1,13 @@
 import { redirect } from 'next/navigation'
-import { getSession, hasMinRole } from '@/lib/auth'
+import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { OrientadorDashboard } from './OrientadorDashboard'
-import { UserRole } from '@/types'
+
+const ALLOWED = ['ORIENTADOR', 'COORDENACAO', 'SUPERADMIN']
 
 export default async function OrientadorPage() {
   const session = await getSession()
-  if (!session || !hasMinRole(session.user.role as UserRole, 'ORIENTADOR')) redirect('/')
+  if (!session || !ALLOWED.includes(session.user.role)) redirect('/')
 
   // SUPERADMIN sees all templates; others see only their own advisees
   const isSuperAdmin = session.user.role === 'SUPERADMIN'
