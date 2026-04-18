@@ -309,9 +309,27 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
   return chunks
 }
 
-function TemplatePDFDocument({ template, attachments = [] }: { template: Template; attachments: Attachment[] }) {
-  const imageAttachments = attachments.filter(a => a.mimeType.startsWith('image/'))
-  const imageChunks = chunkArray(imageAttachments, IMAGES_PER_PAGE)
+// Pre-fetch image as base64 data URL to avoid CORS issues with Supabase Storage
+async function urlToDataUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const blob = await res.blob()
+    return new Promise(resolve => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.onerror = () => resolve(null)
+      reader.readAsDataURL(blob)
+    })
+  } catch {
+    return null
+  }
+}
+
+type AttachmentWithData = Attachment & { dataUrl: string | null }
+
+function TemplatePDFDocument({ template, attachments = [] }: { template: Template; attachments: AttachmentWithData[] }) {
+  const imageChunks = chunkArray(attachments.filter(a => a.dataUrl !== null), IMAGES_PER_PAGE)
   const impactoAreas = parseJSON(template.impactoArea).map(v => areaLabels[v] || v).join(', ')
   const setores = parseJSON(template.setorBeneficiado)
 
@@ -442,9 +460,6 @@ function TemplatePDFDocument({ template, attachments = [] }: { template: Templat
         <FieldSection num={13} title="Impacto – Área Impactada" value={impactoAreas || null} type="radio" />
         <FieldSection num={14} title="Impacto – Tipo" value={template.impactoTipo ? tipoLabels[template.impactoTipo] : null} type="radio" />
         {template.impactoTipoDesc && <FieldSection num="" title="Descrição do Tipo de Impacto" value={template.impactoTipoDesc} />}
-        <FieldSection num={15} title="Replicabilidade" value={template.replicabilidade ? repLabels[template.replicabilidade] : null} type="radio" />
-        {template.replicabilidadeDesc && <FieldSection num="" title="Descrição da Replicabilidade" value={template.replicabilidadeDesc} />}
-        <FieldSection num={16} title="Abrangência territorial" value={template.abrangencia ? abrangLabels[template.abrangencia] : null} type="radio" />
 
         <View style={styles.footer}>
           <View style={{ flex: 1 }}>
@@ -461,6 +476,9 @@ function TemplatePDFDocument({ template, attachments = [] }: { template: Templat
           <Text style={styles.pageHeaderText}>Características e Informações Adicionais</Text>
         </View>
 
+        <FieldSection num={15} title="Replicabilidade" value={template.replicabilidade ? repLabels[template.replicabilidade] : null} type="radio" />
+        {template.replicabilidadeDesc && <FieldSection num="" title="Descrição da Replicabilidade" value={template.replicabilidadeDesc} />}
+        <FieldSection num={16} title="Abrangência territorial" value={template.abrangencia ? abrangLabels[template.abrangencia] : null} type="radio" />
         <FieldSection num={17} title="Complexidade" value={template.complexidade ? complexLabels[template.complexidade] : null} type="radio" />
         {template.complexidadeDesc && <FieldSection num="" title="Descrição da Complexidade" value={template.complexidadeDesc} />}
         <FieldSection num={18} title="Inovação" value={template.inovacao ? inovacaoLabels[template.inovacao] : null} type="radio" />
@@ -511,7 +529,7 @@ function TemplatePDFDocument({ template, attachments = [] }: { template: Templat
             {chunk.map(att => (
               <View key={att.id} style={styles.attachCell}>
                 <Image
-                  src={att.url}
+                  src={att.dataUrl!}
                   style={styles.attachImage}
                 />
                 <Text style={styles.attachCaption}>{att.originalName}</Text>
@@ -533,7 +551,16 @@ function TemplatePDFDocument({ template, attachments = [] }: { template: Templat
 }
 
 export async function generateTemplatePDF(template: Template, attachments: Attachment[] = []) {
-  const doc = <TemplatePDFDocument template={template} attachments={attachments} />
+  // Pre-fetch image attachments as base64 data URLs to avoid CORS issues with storage
+  const imageAttachments = attachments.filter(a => a.mimeType.startsWith('image/'))
+  const attachmentsWithData: AttachmentWithData[] = await Promise.all(
+    imageAttachments.map(async att => ({
+      ...att,
+      dataUrl: await urlToDataUrl(att.url),
+    }))
+  )
+
+  const doc = <TemplatePDFDocument template={template} attachments={attachmentsWithData} />
   const blob = await pdf(doc).toBlob()
   const filename = `PPGSMI_${(template.tituloPt || 'template').replace(/\s+/g, '_').slice(0, 50)}_${new Date().getFullYear()}.pdf`
 
