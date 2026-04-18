@@ -3,18 +3,41 @@ import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 
 const VALID_ROLES = ['ALUNO', 'ORIENTADOR', 'COORDENACAO', 'SUPERADMIN']
-const CAN_LIST = ['ORIENTADOR', 'COORDENACAO', 'SUPERADMIN']
+const CAN_LIST_ALL = ['ORIENTADOR', 'COORDENACAO', 'SUPERADMIN']
 const CAN_MANAGE = ['COORDENACAO', 'SUPERADMIN']
+// Roles that ALUNOs are allowed to search (for advisor selection)
+const ADVISOR_ROLES = ['ORIENTADOR', 'COORDENACAO']
 
-/** GET /api/users — list users (ORIENTADOR+) */
+/** GET /api/users — list users
+ *  - ORIENTADOR+ can list any role
+ *  - ALUNO can only list ORIENTADOR or COORDENACAO (for advisor selection modal)
+ */
 export async function GET(req: NextRequest) {
   const session = await getSession()
-  if (!session || !CAN_LIST.includes(session.user.role)) {
-    return NextResponse.json({ success: false, error: 'Sem permissão' }, { status: 403 })
+  if (!session) {
+    return NextResponse.json({ success: false, error: 'Não autenticado' }, { status: 401 })
   }
 
   const { searchParams } = new URL(req.url)
   const role = searchParams.get('role')
+
+  // ALUNOs can only fetch advisor-eligible users
+  if (session.user.role === 'ALUNO') {
+    if (!role || !ADVISOR_ROLES.includes(role)) {
+      return NextResponse.json({ success: false, error: 'Sem permissão' }, { status: 403 })
+    }
+    const users = await prisma.user.findMany({
+      where: { role },
+      select: { id: true, name: true, email: true },
+      orderBy: { name: 'asc' },
+    })
+    return NextResponse.json({ success: true, data: users })
+  }
+
+  // ORIENTADOR+ can list all (with optional role filter)
+  if (!CAN_LIST_ALL.includes(session.user.role)) {
+    return NextResponse.json({ success: false, error: 'Sem permissão' }, { status: 403 })
+  }
 
   const users = await prisma.user.findMany({
     where: role ? { role } : undefined,
