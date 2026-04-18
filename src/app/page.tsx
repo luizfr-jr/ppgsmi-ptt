@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
+import { NinMaLogo } from '@/components/layout/NinMaLogo'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -66,7 +66,7 @@ export default function LoginPage() {
         {/* Logo + header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white shadow-lg mb-4">
-            <img src="/logo-ninma.svg" alt="NinMaHub" className="w-16 h-auto" />
+            <NinMaLogo className="w-16 h-auto" />
           </div>
           <h1 className="text-2xl font-bold text-ninma-dark">NinMaHub</h1>
           <p className="text-sm text-gray-500 mt-1">PPGSMI – Sistema de Templates</p>

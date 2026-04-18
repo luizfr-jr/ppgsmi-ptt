@@ -9,11 +9,11 @@ import { TemplateForm } from '@/components/template/TemplateForm'
 import { CommentPanel } from '@/components/template/CommentPanel'
 import { PWAInstallPrompt } from '@/components/layout/PWAInstallPrompt'
 import { ArrowLeft, Trash2 } from 'lucide-react'
-import { Template, Comment } from '@/types'
+import { Template, Comment, Attachment } from '@/types'
 
 interface Props {
   user: { id: string; email: string; name: string | null; role: string }
-  template: Template & { comments: Comment[] }
+  template: Template & { comments: Comment[]; attachments: Attachment[] }
 }
 
 export function TemplateDetailStudent({ user, template: initialTemplate }: Props) {
@@ -67,6 +67,7 @@ export function TemplateDetailStudent({ user, template: initialTemplate }: Props
             {/* Template form */}
             <TemplateForm
               template={template}
+              attachments={initialTemplate.attachments}
               readOnly={!canEdit}
               canChangeStatus={canSubmit}
               onSaved={setTemplate as any}

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { LogOut, User, Menu, X } from 'lucide-react'
+import { NinMaLogo } from './NinMaLogo'
 
 interface HeaderProps {
   user: { name: string | null; email: string; role: string }
@@ -35,7 +36,7 @@ export function Header({ user, onMenuToggle, menuOpen }: HeaderProps) {
         >
           {menuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
-        <img src="/logo-ninma.svg" alt="NinMaHub" className="h-8 w-auto" />
+        <NinMaLogo className="h-8 w-auto" />
         <div className="hidden sm:block">
           <div className="text-sm font-semibold text-ninma-dark">PPGSMI</div>
           <div className="text-xs text-gray-400">Sistema de Templates</div>

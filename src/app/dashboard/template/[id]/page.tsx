@@ -18,6 +18,7 @@ export default async function TemplatePage({ params }: Props) {
         include: { author: { select: { id: true, name: true, email: true, role: true } } },
         orderBy: { createdAt: 'desc' },
       },
+      attachments: { orderBy: { createdAt: 'asc' } },
     },
   })
 

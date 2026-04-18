@@ -26,19 +26,19 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-ninma-teal hover:bg-ninma-teal-dark text-white font-medium py-2.5 px-6 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-ninma-teal hover:bg-ninma-teal-dark active:scale-95 hover:scale-[1.03] text-white font-medium py-2.5 px-6 rounded-xl transition-all duration-200 shadow-sm hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100;
   }
 
   .btn-secondary {
-    @apply bg-ninma-purple hover:bg-ninma-purple-dark text-white font-medium py-2.5 px-6 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-ninma-purple hover:bg-ninma-purple-dark active:scale-95 hover:scale-[1.03] text-white font-medium py-2.5 px-6 rounded-xl transition-all duration-200 shadow-sm hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100;
   }
 
   .btn-outline {
-    @apply border-2 border-ninma-teal text-ninma-teal hover:bg-ninma-teal hover:text-white font-medium py-2.5 px-6 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply border-2 border-ninma-teal text-ninma-teal hover:bg-ninma-teal hover:text-white active:scale-95 hover:scale-[1.03] font-medium py-2.5 px-6 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100;
   }
 
   .btn-danger {
-    @apply bg-ninma-pink hover:bg-ninma-pink-dark text-white font-medium py-2.5 px-6 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md;
+    @apply bg-ninma-pink hover:bg-ninma-pink-dark active:scale-95 hover:scale-[1.03] text-white font-medium py-2.5 px-6 rounded-xl transition-all duration-200 shadow-sm hover:shadow-lg;
   }
 
   .card {

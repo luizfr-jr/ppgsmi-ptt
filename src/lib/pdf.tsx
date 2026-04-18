@@ -4,9 +4,10 @@ import {
   Text,
   View,
   StyleSheet,
+  Image,
   pdf,
 } from '@react-pdf/renderer'
-import { Template } from '@/types'
+import { Template, Attachment } from '@/types'
 
 // Note: @react-pdf/renderer is client-side only
 // This file should only be imported dynamically
@@ -30,68 +31,85 @@ const styles = StyleSheet.create({
     color: colors.dark,
     backgroundColor: colors.white,
   },
+  // Cover: full white page with top accent band + bottom colored footer
   coverPage: {
     flex: 1,
+    backgroundColor: colors.white,
+    flexDirection: 'column',
+  },
+  coverTopBand: {
     backgroundColor: colors.teal,
+    height: 8,
+  },
+  coverBody: {
+    flex: 1,
+    padding: 50,
+    justifyContent: 'space-between',
+  },
+  // Logo PNG
+  coverLogoImg: {
+    width: 640,
+    height: 256,
+    objectFit: 'contain',
+  },
+  // Center content
+  coverCenter: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    paddingVertical: 40,
   },
-  coverLogo: {
-    width: 120,
-    height: 48,
+  coverDivider: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     marginBottom: 32,
-    backgroundColor: colors.white,
-    borderRadius: 12,
-    padding: 8,
   },
-  coverTitle: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.8)',
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: 8,
-  },
-  coverUniversity: {
-    fontSize: 14,
-    fontFamily: 'Helvetica-Bold',
-    color: colors.white,
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  coverProgram: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.9)',
-    textAlign: 'center',
-    marginBottom: 32,
+  coverDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 3,
   },
   coverBadge: {
     backgroundColor: colors.purple,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
+    paddingHorizontal: 28,
+    paddingVertical: 10,
     borderRadius: 20,
-    marginBottom: 40,
+    marginBottom: 24,
   },
   coverBadgeText: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: 'Helvetica-Bold',
     color: colors.white,
     textAlign: 'center',
   },
+  coverUniversity: {
+    fontSize: 18,
+    fontFamily: 'Helvetica-Bold',
+    color: colors.dark,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  coverProgram: {
+    fontSize: 11,
+    color: colors.gray,
+    textAlign: 'center',
+  },
+  // Fields section at bottom
   coverGrid: {
-    width: '100%',
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: colors.lightBg,
     borderRadius: 12,
     padding: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.teal,
   },
   coverGridRow: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   coverFieldLabel: {
-    fontSize: 8,
-    color: 'rgba(255,255,255,0.7)',
+    fontSize: 7,
+    color: colors.gray,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 3,
@@ -99,7 +117,46 @@ const styles = StyleSheet.create({
   coverFieldValue: {
     fontSize: 10,
     fontFamily: 'Helvetica-Bold',
-    color: colors.white,
+    color: colors.dark,
+  },
+  coverTitle: {
+    fontSize: 10,
+    color: colors.gray,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
+  coverBottomBand: {
+    backgroundColor: colors.teal,
+    height: 6,
+  },
+  // Attachment pages
+  attachPageTitle: {
+    fontSize: 11,
+    fontFamily: 'Helvetica-Bold',
+    color: colors.dark,
+    marginBottom: 16,
+  },
+  attachGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  attachCell: {
+    width: '47%',
+    marginBottom: 4,
+  },
+  attachImage: {
+    width: '100%',
+    height: 180,
+    objectFit: 'cover',
+    borderRadius: 6,
+    backgroundColor: colors.lightBg,
+  },
+  attachCaption: {
+    fontSize: 7,
+    color: colors.gray,
+    marginTop: 4,
+    textAlign: 'center',
   },
   contentPage: {
     padding: 50,
@@ -244,7 +301,17 @@ function parseJSON(val: string | null | undefined): string[] {
   try { return JSON.parse(val || '[]') } catch { return [] }
 }
 
-function TemplatePDFDocument({ template }: { template: Template }) {
+const IMAGES_PER_PAGE = 4 // 2 columns × 2 rows
+
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = []
+  for (let i = 0; i < arr.length; i += size) chunks.push(arr.slice(i, i + size))
+  return chunks
+}
+
+function TemplatePDFDocument({ template, attachments = [] }: { template: Template; attachments: Attachment[] }) {
+  const imageAttachments = attachments.filter(a => a.mimeType.startsWith('image/'))
+  const imageChunks = chunkArray(imageAttachments, IMAGES_PER_PAGE)
   const impactoAreas = parseJSON(template.impactoArea).map(v => areaLabels[v] || v).join(', ')
   const setores = parseJSON(template.setorBeneficiado)
 
@@ -253,37 +320,70 @@ function TemplatePDFDocument({ template }: { template: Template }) {
       {/* Cover Page */}
       <Page size="A4" style={styles.page}>
         <View style={styles.coverPage}>
-          <Text style={styles.coverTitle}>NinMaHub</Text>
-          <Text style={styles.coverUniversity}>Universidade Franciscana</Text>
-          <Text style={styles.coverProgram}>
-            Programa de Pós-Graduação em{'\n'}Saúde Materno Infantil
-          </Text>
-          <View style={styles.coverBadge}>
-            <Text style={styles.coverBadgeText}>Produto Técnico-Tecnológico</Text>
+          {/* Top accent band */}
+          <View style={styles.coverTopBand} />
+
+          <View style={styles.coverBody}>
+            {/* Logo PNG centralizado */}
+            <View style={{ alignItems: 'center' }}>
+              <Image
+                src={typeof window !== 'undefined' ? `${window.location.origin}/logo-ninma.png` : '/logo-ninma.png'}
+                style={styles.coverLogoImg}
+              />
+            </View>
+
+            {/* Center: university + badge */}
+            <View style={styles.coverCenter}>
+              {/* Decorative dots row */}
+              <View style={styles.coverDivider}>
+                {[colors.teal, colors.orange, colors.orange, colors.pink].map((c, i) => (
+                  <View key={i} style={[styles.coverDot, { backgroundColor: c }]} />
+                ))}
+              </View>
+
+              <View style={styles.coverBadge}>
+                <Text style={styles.coverBadgeText}>Produto Técnico-Tecnológico</Text>
+              </View>
+
+              <Text style={styles.coverUniversity}>Universidade Franciscana</Text>
+              <Text style={styles.coverProgram}>
+                Programa de Pós-Graduação em Saúde Materno Infantil
+              </Text>
+            </View>
+
+            {/* Fields grid */}
+            <View style={styles.coverGrid}>
+              <View style={styles.coverGridRow}>
+                <View style={{ flex: 1, marginRight: 16 }}>
+                  <Text style={styles.coverFieldLabel}>Aluno</Text>
+                  <Text style={styles.coverFieldValue}>{template.aluno || '—'}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.coverFieldLabel}>Orientador</Text>
+                  <Text style={styles.coverFieldValue}>{template.orientador || '—'}</Text>
+                </View>
+              </View>
+              {template.coorientador && (
+                <View style={{ marginBottom: 14 }}>
+                  <Text style={styles.coverFieldLabel}>Coorientador</Text>
+                  <Text style={styles.coverFieldValue}>{template.coorientador}</Text>
+                </View>
+              )}
+              <View style={{ marginBottom: 14 }}>
+                <Text style={styles.coverFieldLabel}>Banca Avaliadora</Text>
+                <Text style={styles.coverFieldValue}>{template.bancaAvaliadora || '—'}</Text>
+              </View>
+              {template.data && (
+                <View>
+                  <Text style={styles.coverFieldLabel}>Data</Text>
+                  <Text style={styles.coverFieldValue}>{template.data}</Text>
+                </View>
+              )}
+            </View>
           </View>
 
-          <View style={styles.coverGrid}>
-            <View style={styles.coverGridRow}>
-              <View style={{ flex: 1, marginRight: 10 }}>
-                <Text style={styles.coverFieldLabel}>Aluno</Text>
-                <Text style={styles.coverFieldValue}>{template.aluno || '—'}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.coverFieldLabel}>Orientador</Text>
-                <Text style={styles.coverFieldValue}>{template.orientador || '—'}</Text>
-              </View>
-            </View>
-            <View>
-              <Text style={styles.coverFieldLabel}>Banca Avaliadora</Text>
-              <Text style={styles.coverFieldValue}>{template.bancaAvaliadora || '—'}</Text>
-            </View>
-            {template.data && (
-              <View style={{ marginTop: 12 }}>
-                <Text style={styles.coverFieldLabel}>Data</Text>
-                <Text style={styles.coverFieldValue}>{template.data}</Text>
-              </View>
-            )}
-          </View>
+          {/* Bottom accent band */}
+          <View style={styles.coverBottomBand} />
         </View>
       </Page>
 
@@ -388,8 +488,6 @@ function TemplatePDFDocument({ template }: { template: Template }) {
         <FieldSection num={24} title="Transferência de tecnologia/conhecimento" value={template.transferenciaConhecimento ? repLabels[template.transferenciaConhecimento] : null} type="radio" />
         <FieldSection num={25} title="URL do Produto Técnico-Tecnológico" value={template.urlProduto} />
         <FieldSection num={26} title="Divulgação" value={template.divulgacao} />
-        <FieldSection num={27} title="Anexos" value={template.anexosDesc} />
-
         <View style={styles.footer}>
           <View style={{ flex: 1 }}>
             <View style={styles.footerLine} />
@@ -398,12 +496,44 @@ function TemplatePDFDocument({ template }: { template: Template }) {
           <Text style={[styles.footerText, { marginLeft: 20 }]}>4</Text>
         </View>
       </Page>
+
+      {/* Attachment pages — one page per chunk of 4 images */}
+      {imageChunks.map((chunk, pageIdx) => (
+        <Page key={`att-${pageIdx}`} size="A4" style={[styles.page, styles.contentPage]}>
+          <View style={styles.pageHeader}>
+            <Text style={styles.pageHeaderText}>PPGSMI – Universidade Franciscana</Text>
+            <Text style={styles.pageHeaderText}>Anexos – Produto Técnico-Tecnológico</Text>
+          </View>
+
+          <Text style={styles.attachPageTitle}>Anexos (pág. {pageIdx + 1})</Text>
+
+          <View style={styles.attachGrid}>
+            {chunk.map(att => (
+              <View key={att.id} style={styles.attachCell}>
+                <Image
+                  src={att.url}
+                  style={styles.attachImage}
+                />
+                <Text style={styles.attachCaption}>{att.originalName}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.footer}>
+            <View style={{ flex: 1 }}>
+              <View style={styles.footerLine} />
+              <Text style={styles.footerText}>NinMaHub – PPGSMI – Universidade Franciscana</Text>
+            </View>
+            <Text style={[styles.footerText, { marginLeft: 20 }]}>{5 + pageIdx}</Text>
+          </View>
+        </Page>
+      ))}
     </Document>
   )
 }
 
-export async function generateTemplatePDF(template: Template) {
-  const doc = <TemplatePDFDocument template={template} />
+export async function generateTemplatePDF(template: Template, attachments: Attachment[] = []) {
+  const doc = <TemplatePDFDocument template={template} attachments={attachments} />
   const blob = await pdf(doc).toBlob()
   const filename = `PPGSMI_${(template.tituloPt || 'template').replace(/\s+/g, '_').slice(0, 50)}_${new Date().getFullYear()}.pdf`
 

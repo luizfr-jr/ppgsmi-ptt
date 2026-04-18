@@ -21,6 +21,9 @@ export async function POST(req: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ success: false, error: 'E-mail inválido' }, { status: 400 })
     }
-    return NextResponse.json({ success: false, error: 'Erro ao enviar código' }, { status: 500 })
+    const msg = process.env.NODE_ENV === 'development'
+      ? `Erro: ${(error as Error)?.message || String(error)}`
+      : 'Erro ao enviar código'
+    return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }

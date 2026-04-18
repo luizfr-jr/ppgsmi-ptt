@@ -8,11 +8,11 @@ import { TemplateForm } from '@/components/template/TemplateForm'
 import { CommentPanel } from '@/components/template/CommentPanel'
 import { PWAInstallPrompt } from '@/components/layout/PWAInstallPrompt'
 import { ArrowLeft, User } from 'lucide-react'
-import { Template, Comment } from '@/types'
+import { Template, Comment, Attachment } from '@/types'
 
 interface Props {
   user: { id: string; email: string; name: string | null; role: string }
-  template: Template & { comments: Comment[]; student: { id: string; name: string | null; email: string } }
+  template: Template & { comments: Comment[]; attachments: Attachment[]; student: { id: string; name: string | null; email: string } }
 }
 
 export function TemplateDetailOrientador({ user, template: initialTemplate }: Props) {
@@ -42,6 +42,7 @@ export function TemplateDetailOrientador({ user, template: initialTemplate }: Pr
 
             <TemplateForm
               template={template}
+              attachments={initialTemplate.attachments}
               readOnly={false}
               canChangeStatus={true}
               onSaved={setTemplate as any}

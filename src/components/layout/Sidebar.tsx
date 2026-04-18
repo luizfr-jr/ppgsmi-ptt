@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { FileText, Home, Users, MessageSquare } from 'lucide-react'
+import { Home, Users } from 'lucide-react'
 import { clsx } from 'clsx'
 
 interface SidebarProps {
@@ -14,7 +14,6 @@ interface SidebarProps {
 const navItems: Record<string, { href: string; label: string; icon: React.ReactNode }[]> = {
   ALUNO: [
     { href: '/dashboard', label: 'Meu Template', icon: <Home size={18} /> },
-    { href: '/dashboard/template/novo', label: 'Novo Template', icon: <FileText size={18} /> },
   ],
   ORIENTADOR: [
     { href: '/orientador', label: 'Templates dos Alunos', icon: <Users size={18} /> },

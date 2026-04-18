@@ -3,11 +3,14 @@
 import { useState, useCallback, useEffect } from 'react'
 import { Save, Download, Send, CheckCircle, RotateCcw } from 'lucide-react'
 import { RadioGroup } from './RadioGroup'
+import { NinMaLogo } from '@/components/layout/NinMaLogo'
 import { CheckboxGroup } from './CheckboxGroup'
-import { Template } from '@/types'
+import { AttachmentsUploader } from './AttachmentsUploader'
+import { Template, Attachment } from '@/types'
 
 interface TemplateFormProps {
   template: Template
+  attachments?: Attachment[]
   readOnly?: boolean
   canChangeStatus?: boolean
   onSaved?: (t: Template) => void
@@ -35,7 +38,7 @@ const SECTOR_OPTIONS = [
   { value: 'ORGANISMOS_INTL', label: 'Organismos internacionais e outras instituições extraterritoriais' },
 ]
 
-export function TemplateForm({ template: initialTemplate, readOnly = false, canChangeStatus = false, onSaved }: TemplateFormProps) {
+export function TemplateForm({ template: initialTemplate, attachments = [], readOnly = false, canChangeStatus = false, onSaved }: TemplateFormProps) {
   const [template, setTemplate] = useState(initialTemplate)
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState<Date | null>(null)
@@ -104,9 +107,8 @@ export function TemplateForm({ template: initialTemplate, readOnly = false, canC
   async function handleExportPDF() {
     setGeneratingPDF(true)
     try {
-      // Dynamic import to avoid SSR issues
       const { generateTemplatePDF } = await import('@/lib/pdf')
-      await generateTemplatePDF(template)
+      await generateTemplatePDF(template, attachments)
     } catch (e) {
       console.error('PDF error', e)
       setError('Erro ao gerar PDF')
@@ -207,7 +209,7 @@ export function TemplateForm({ template: initialTemplate, readOnly = false, canC
       <div className="card">
         <div className="text-center border-b border-ninma-teal/20 pb-6 mb-6">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-ninma-teal-light mb-3">
-            <img src="/logo-ninma.svg" alt="NinMaHub" className="w-12 h-auto" />
+            <NinMaLogo className="w-12 h-auto" />
           </div>
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-widest">Universidade Franciscana</h2>
           <h3 className="text-base font-bold text-ninma-dark mt-1">
@@ -238,6 +240,17 @@ export function TemplateForm({ template: initialTemplate, readOnly = false, canC
               placeholder="Nome completo do orientador"
               value={template.orientador || ''}
               onChange={e => update('orientador', e.target.value)}
+              disabled={readOnly}
+            />
+          </div>
+          <div>
+            <label className="label">Coorientador <span className="text-gray-400 text-xs font-normal">(opcional)</span></label>
+            <input
+              type="text"
+              className="input"
+              placeholder="Nome completo do coorientador"
+              value={template.coorientador || ''}
+              onChange={e => update('coorientador', e.target.value)}
               disabled={readOnly}
             />
           </div>
@@ -815,7 +828,7 @@ export function TemplateForm({ template: initialTemplate, readOnly = false, canC
           Anexos
         </div>
         <div className="bg-ninma-teal-light/50 rounded-xl p-4 mb-4">
-          <p className="text-xs text-ninma-teal-dark font-medium mb-2">Dependendo do Produto Técnico-Tecnológico, anexar em PDF:</p>
+          <p className="text-xs text-ninma-teal-dark font-medium mb-2">Dependendo do Produto Técnico-Tecnológico, anexar:</p>
           <ul className="text-xs text-ninma-teal-dark space-y-1 list-disc list-inside">
             <li>Apresentação do Produto Técnico-Tecnológico</li>
             <li>Declaração emitida pela organização/instituição demandante</li>
@@ -828,12 +841,10 @@ export function TemplateForm({ template: initialTemplate, readOnly = false, canC
             <li>Termo de outorga / PDI da Universidade</li>
           </ul>
         </div>
-        <textarea
-          className="textarea"
-          placeholder="Descreva os anexos incluídos (links, nomes dos arquivos, etc.)"
-          value={template.anexosDesc || ''}
-          onChange={e => update('anexosDesc', e.target.value)}
-          disabled={readOnly}
+        <AttachmentsUploader
+          templateId={template.id}
+          initial={attachments}
+          readOnly={readOnly}
         />
       </div>
 

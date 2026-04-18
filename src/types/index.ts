@@ -17,6 +17,7 @@ export interface Template {
   updatedAt: Date
   aluno: string | null
   orientador: string | null
+  coorientador: string | null
   bancaAvaliadora: string | null
   data: string | null
   tituloPt: string | null
@@ -57,6 +58,17 @@ export interface Template {
   student?: User
   advisor?: User | null
   comments?: Comment[]
+}
+
+export interface Attachment {
+  id: string
+  filename: string
+  originalName: string
+  mimeType: string
+  size: number
+  url: string
+  createdAt: Date
+  templateId: string
 }
 
 export interface Comment {

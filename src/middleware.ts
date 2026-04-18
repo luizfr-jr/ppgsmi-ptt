@@ -1,39 +1,51 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getSession } from '@/lib/auth'
+import { jwtVerify } from 'jose'
+
+const COOKIE_NAME = 'ppgsmi-session'
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'ppgsmi-ninmahub-secret-key-2025-change-in-production'
+)
 
 const publicPaths = ['/', '/login', '/api/auth/send-otp', '/api/auth/verify-otp']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Allow public paths
-  if (publicPaths.some(p => pathname === p) || pathname.startsWith('/_next') || pathname.startsWith('/icons') || pathname.startsWith('/api/auth')) {
+  if (
+    publicPaths.some(p => pathname === p) ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/icons') ||
+    pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/manifest')
+  ) {
     return NextResponse.next()
   }
 
-  const session = await getSession(request)
+  const token = request.cookies.get(COOKIE_NAME)?.value
 
-  if (!session) {
+  if (!token) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
-  // Role-based routing
-  const role = session.user.role
+  try {
+    const { payload } = await jwtVerify(token, JWT_SECRET)
+    const role = payload.role as string
 
-  if (pathname.startsWith('/dashboard') && role !== 'ALUNO') {
-    return NextResponse.redirect(new URL(getRoleHome(role), request.url))
+    if (pathname.startsWith('/dashboard') && role !== 'ALUNO') {
+      return NextResponse.redirect(new URL(getRoleHome(role), request.url))
+    }
+    if (pathname.startsWith('/orientador') && role !== 'ORIENTADOR') {
+      return NextResponse.redirect(new URL(getRoleHome(role), request.url))
+    }
+    if (pathname.startsWith('/coordenacao') && role !== 'COORDENACAO') {
+      return NextResponse.redirect(new URL(getRoleHome(role), request.url))
+    }
+
+    return NextResponse.next()
+  } catch {
+    return NextResponse.redirect(new URL('/', request.url))
   }
-
-  if (pathname.startsWith('/orientador') && role !== 'ORIENTADOR') {
-    return NextResponse.redirect(new URL(getRoleHome(role), request.url))
-  }
-
-  if (pathname.startsWith('/coordenacao') && role !== 'COORDENACAO') {
-    return NextResponse.redirect(new URL(getRoleHome(role), request.url))
-  }
-
-  return NextResponse.next()
 }
 
 function getRoleHome(role: string): string {

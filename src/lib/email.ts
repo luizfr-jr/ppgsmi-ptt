@@ -1,16 +1,33 @@
 import nodemailer from 'nodemailer'
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.EMAIL_PORT || '587'),
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-})
+const isDev = process.env.NODE_ENV === 'development'
+const emailConfigured = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS)
+
+const transporter = nodemailer.createTransport(
+  emailConfigured
+    ? {
+        host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.EMAIL_PORT || '587'),
+        secure: false,
+        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+      }
+    : { jsonTransport: true } // no-op transporter for dev without SMTP
+)
+
+function logCodeToTerminal(email: string, code: string) {
+  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+  console.log('  PPGSMI – Codigo de acesso (DEV)')
+  console.log(`  Para: ${email}`)
+  console.log(`  Codigo: \x1b[32m\x1b[1m${code}\x1b[0m`)
+  console.log('  (Configure EMAIL_USER e EMAIL_PASS no .env para envio real)')
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
+}
 
 export async function sendOTPEmail(email: string, code: string) {
+  if (!emailConfigured) {
+    logCodeToTerminal(email, code)
+    return
+  }
   const html = `
     <!DOCTYPE html>
     <html>
@@ -55,10 +72,19 @@ export async function sendOTPEmail(email: string, code: string) {
     </html>
   `
 
-  await transporter.sendMail({
-    from: `"PPGSMI – NinMaHub" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
-    to: email,
-    subject: `${code} – Seu código de acesso PPGSMI`,
-    html,
-  })
+  try {
+    await transporter.sendMail({
+      from: `"PPGSMI – NinMaHub" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+      to: email,
+      subject: `${code} – Seu código de acesso PPGSMI`,
+      html,
+    })
+  } catch (smtpError) {
+    if (isDev) {
+      console.error('SMTP falhou, usando fallback de terminal:', smtpError)
+      logCodeToTerminal(email, code)
+    } else {
+      throw smtpError
+    }
+  }
 }
