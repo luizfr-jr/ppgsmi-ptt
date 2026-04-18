@@ -41,11 +41,12 @@ export function SetupModal({ user, onComplete }: Props) {
   async function loadOrientadores() {
     setLoadingAdvisors(true)
     try {
-      const [r1, r2] = await Promise.all([
+      const [r1, r2, r3] = await Promise.all([
         fetch('/api/users?role=ORIENTADOR').then(r => r.json()),
         fetch('/api/users?role=COORDENACAO').then(r => r.json()),
+        fetch('/api/users?role=SUPERADMIN').then(r => r.json()),
       ])
-      setOrientadores([...(r1.data || []), ...(r2.data || [])])
+      setOrientadores([...(r1.data || []), ...(r2.data || []), ...(r3.data || [])])
     } finally {
       setLoadingAdvisors(false)
     }

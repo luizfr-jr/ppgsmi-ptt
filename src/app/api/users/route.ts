@@ -6,7 +6,7 @@ const VALID_ROLES = ['ALUNO', 'ORIENTADOR', 'COORDENACAO', 'SUPERADMIN']
 const CAN_LIST_ALL = ['ORIENTADOR', 'COORDENACAO', 'SUPERADMIN']
 const CAN_MANAGE = ['COORDENACAO', 'SUPERADMIN']
 // Roles that ALUNOs are allowed to search (for advisor selection)
-const ADVISOR_ROLES = ['ORIENTADOR', 'COORDENACAO']
+const ADVISOR_ROLES = ['ORIENTADOR', 'COORDENACAO', 'SUPERADMIN']
 
 /** GET /api/users — list users
  *  - ORIENTADOR+ can list any role
