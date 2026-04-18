@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, ReactNode } from 'react'
 import { Header } from '@/components/layout/Header'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { PWAInstallPrompt } from '@/components/layout/PWAInstallPrompt'
@@ -23,7 +23,7 @@ interface Props {
   initialUsers: UserItem[]
 }
 
-const roleConfig: Record<UserRole, { label: string; color: string; icon: React.ReactNode }> = {
+const roleConfig: Record<UserRole, { label: string; color: string; icon: ReactNode }> = {
   ALUNO: { label: 'Aluno', color: 'bg-blue-100 text-blue-700', icon: <GraduationCap size={13} /> },
   ORIENTADOR: { label: 'Orientador', color: 'bg-ninma-teal-light text-ninma-teal-dark', icon: <Users size={13} /> },
   COORDENACAO: { label: 'Coordenação', color: 'bg-ninma-purple-light text-ninma-purple', icon: <Shield size={13} /> },

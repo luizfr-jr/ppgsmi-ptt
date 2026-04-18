@@ -1,5 +1,6 @@
 'use client'
 
+import { ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Users, UserCog, ClipboardList } from 'lucide-react'
@@ -11,7 +12,7 @@ interface SidebarProps {
   onClose?: () => void
 }
 
-const navItems: Record<string, { href: string; label: string; icon: React.ReactNode }[]> = {
+const navItems: Record<string, { href: string; label: string; icon: ReactNode }[]> = {
   ALUNO: [
     { href: '/dashboard', label: 'Meu Template', icon: <Home size={18} /> },
   ],

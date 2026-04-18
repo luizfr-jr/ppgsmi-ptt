@@ -1,27 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { NinMaLogo } from '@/components/layout/NinMaLogo'
 
-const ROLE_REDIRECT: Record<string, string> = {
-  ALUNO: '/dashboard',
-  ORIENTADOR: '/orientador',
-  COORDENACAO: '/coordenacao',
-  SUPERADMIN: '/coordenacao',
-}
-
 export default function LoginPage() {
-  // If already authenticated, redirect immediately
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => r.json())
-      .then(data => {
-        if (data.success && data.user?.role) {
-          window.location.href = ROLE_REDIRECT[data.user.role] || '/dashboard'
-        }
-      })
-      .catch(() => {})
-  }, [])
   const [step, setStep] = useState<'email' | 'otp'>('email')
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
