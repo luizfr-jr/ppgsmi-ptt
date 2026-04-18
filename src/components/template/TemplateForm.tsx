@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { Save, Download, Send, CheckCircle, RotateCcw } from 'lucide-react'
+import { TemplateStatus } from '@/types'
 import { RadioGroup } from './RadioGroup'
 import { NinMaLogo } from '@/components/layout/NinMaLogo'
 import { CheckboxGroup } from './CheckboxGroup'
@@ -91,7 +92,7 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
     }
   }
 
-  async function handleStatusChange(newStatus: string) {
+  async function handleStatusChange(newStatus: TemplateStatus) {
     const res = await fetch(`/api/templates/${template.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
