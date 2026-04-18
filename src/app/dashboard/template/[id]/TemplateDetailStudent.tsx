@@ -8,11 +8,12 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { TemplateForm } from '@/components/template/TemplateForm'
 import { CommentPanel } from '@/components/template/CommentPanel'
 import { PWAInstallPrompt } from '@/components/layout/PWAInstallPrompt'
+import { SetupModal, needsSetup } from '@/components/layout/SetupModal'
 import { ArrowLeft, Trash2 } from 'lucide-react'
 import { Template, Comment, Attachment } from '@/types'
 
 interface Props {
-  user: { id: string; email: string; name: string | null; role: string }
+  user: { id: string; email: string; name: string | null; role: string; advisorId?: string | null }
   template: Template & { comments: Comment[]; attachments: Attachment[] }
 }
 
@@ -22,6 +23,8 @@ export function TemplateDetailStudent({ user, template: initialTemplate }: Props
   const [template, setTemplate] = useState(initialTemplate)
   const [comments, setComments] = useState<Comment[]>(initialTemplate.comments || [])
   const [deleting, setDeleting] = useState(false)
+  const [currentUser, setCurrentUser] = useState(user)
+  const [showSetup, setShowSetup] = useState(needsSetup(user))
 
   const canEdit = template.status === 'RASCUNHO' || template.status === 'REVISAO'
   const canSubmit = template.status === 'RASCUNHO'
@@ -41,7 +44,18 @@ export function TemplateDetailStudent({ user, template: initialTemplate }: Props
 
   return (
     <div className="min-h-screen bg-ninma-gray-light flex flex-col">
-      <Header user={user} onMenuToggle={() => setMenuOpen(o => !o)} menuOpen={menuOpen} />
+
+      {showSetup && (
+        <SetupModal
+          user={currentUser}
+          onComplete={(name, advisorId) => {
+            setCurrentUser(prev => ({ ...prev, name, advisorId }))
+            setShowSetup(false)
+          }}
+        />
+      )}
+
+      <Header user={currentUser} onMenuToggle={() => setMenuOpen(o => !o)} menuOpen={menuOpen} />
       <div className="flex flex-1">
         <Sidebar role="ALUNO" open={menuOpen} onClose={() => setMenuOpen(false)} />
         <main className="flex-1 p-4 md:p-8">
