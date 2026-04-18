@@ -1,11 +1,27 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { NinMaLogo } from '@/components/layout/NinMaLogo'
 
+const ROLE_REDIRECT: Record<string, string> = {
+  ALUNO: '/dashboard',
+  ORIENTADOR: '/orientador',
+  COORDENACAO: '/coordenacao',
+  SUPERADMIN: '/coordenacao',
+}
+
 export default function LoginPage() {
-  const router = useRouter()
+  // If already authenticated, redirect immediately
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.user?.role) {
+          window.location.href = ROLE_REDIRECT[data.user.role] || '/dashboard'
+        }
+      })
+      .catch(() => {})
+  }, [])
   const [step, setStep] = useState<'email' | 'otp'>('email')
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
@@ -49,7 +65,8 @@ export default function LoginPage() {
       })
       const data = await res.json()
       if (data.success) {
-        router.push(data.redirect || '/dashboard')
+        // Full page navigation ensures the session cookie is sent on the next request
+        window.location.href = data.redirect || '/dashboard'
       } else {
         setError(data.error || 'Código inválido')
       }
