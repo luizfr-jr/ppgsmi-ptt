@@ -20,11 +20,20 @@ interface Props {
 export function TemplateDetailStudent({ user, template: initialTemplate }: Props) {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
-  const [template, setTemplate] = useState(initialTemplate)
-  const [comments, setComments] = useState<Comment[]>(initialTemplate.comments || [])
-  const [deleting, setDeleting] = useState(false)
   const [currentUser, setCurrentUser] = useState(user)
   const [showSetup, setShowSetup] = useState(needsSetup(user))
+  const [deleting, setDeleting] = useState(false)
+
+  // Pre-fill aluno/orientador from user profile if fields are still empty
+  const advisor = (initialTemplate as any).advisor as { name: string | null; email: string } | null
+  const prefilled = {
+    ...initialTemplate,
+    aluno: initialTemplate.aluno || currentUser.name || '',
+    orientador: initialTemplate.orientador || advisor?.name || advisor?.email || '',
+  }
+
+  const [template, setTemplate] = useState(prefilled)
+  const [comments, setComments] = useState<Comment[]>(initialTemplate.comments || [])
 
   const canEdit = template.status === 'RASCUNHO' || template.status === 'REVISAO'
   const canSubmit = template.status === 'RASCUNHO'

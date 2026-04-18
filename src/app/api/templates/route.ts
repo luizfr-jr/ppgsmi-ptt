@@ -48,10 +48,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Auto-link advisor from student's profile
+    // Auto-link advisor and pre-fill names from student's profile
     const student = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { advisorId: true },
+      select: { name: true, advisorId: true, advisor: { select: { name: true, email: true } } },
     })
 
     const template = await prisma.template.create({
@@ -59,6 +59,8 @@ export async function POST(req: NextRequest) {
         studentId: session.user.id,
         advisorId: student?.advisorId ?? null,
         status: 'RASCUNHO',
+        aluno: student?.name || '',
+        orientador: student?.advisor?.name || student?.advisor?.email || '',
       },
     })
 
