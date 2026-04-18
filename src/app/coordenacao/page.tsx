@@ -7,35 +7,16 @@ const ALLOWED = ['COORDENACAO', 'SUPERADMIN']
 
 export default async function CoordenacaoPage() {
   const session = await getSession()
+  if (!session || !ALLOWED.includes(session.user.role)) redirect('/')
 
-  console.log('[coordenacao] session:', session?.user?.role ?? 'NULL')
-  console.log('[coordenacao] allowed:', session ? ALLOWED.includes(session.user.role) : false)
+  const templates = await prisma.template.findMany({
+    include: {
+      student: { select: { id: true, name: true, email: true } },
+      advisor: { select: { id: true, name: true, email: true } },
+      comments: true,
+    },
+    orderBy: { updatedAt: 'desc' },
+  })
 
-  if (!session) {
-    console.log('[coordenacao] NO SESSION → redirect /')
-    redirect('/')
-  }
-
-  if (!ALLOWED.includes(session.user.role)) {
-    console.log('[coordenacao] ROLE NOT ALLOWED:', session.user.role, '→ redirect /')
-    redirect('/')
-  }
-
-  console.log('[coordenacao] PASSED GUARD — loading templates')
-
-  let templates: any[] = []
-  try {
-    templates = await prisma.template.findMany({
-      include: {
-        student: { select: { id: true, name: true, email: true } },
-        advisor: { select: { id: true, name: true, email: true } },
-        comments: true,
-      },
-      orderBy: { updatedAt: 'desc' },
-    })
-  } catch (e) {
-    console.error('[coordenacao] PRISMA ERROR:', e)
-  }
-
-  return <CoordDashboard user={session.user} templates={templates} />
+  return <CoordDashboard user={session.user} templates={templates as any} />
 }
