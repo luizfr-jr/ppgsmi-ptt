@@ -25,20 +25,60 @@
 }
 
 @layer components {
+  /* Apple-style spring buttons */
   .btn-primary {
-    @apply bg-ninma-teal hover:bg-ninma-teal-dark active:scale-95 hover:scale-[1.03] text-white font-medium py-2.5 px-6 rounded-xl transition-all duration-200 shadow-sm hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100;
+    @apply bg-ninma-teal text-white font-semibold py-2.5 px-6 rounded-xl shadow-sm
+           disabled:opacity-50 disabled:cursor-not-allowed;
+    transition: background-color 0.18s ease, transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s ease;
+  }
+  .btn-primary:hover:not(:disabled) {
+    @apply bg-ninma-teal-dark shadow-lg;
+    transform: scale(1.035);
+  }
+  .btn-primary:active:not(:disabled) {
+    transform: scale(0.95);
+    transition-duration: 0.08s;
   }
 
   .btn-secondary {
-    @apply bg-ninma-purple hover:bg-ninma-purple-dark active:scale-95 hover:scale-[1.03] text-white font-medium py-2.5 px-6 rounded-xl transition-all duration-200 shadow-sm hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100;
+    @apply bg-ninma-purple text-white font-semibold py-2.5 px-6 rounded-xl shadow-sm
+           disabled:opacity-50 disabled:cursor-not-allowed;
+    transition: background-color 0.18s ease, transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s ease;
+  }
+  .btn-secondary:hover:not(:disabled) {
+    @apply bg-ninma-purple-dark shadow-lg;
+    transform: scale(1.035);
+  }
+  .btn-secondary:active:not(:disabled) {
+    transform: scale(0.95);
+    transition-duration: 0.08s;
   }
 
   .btn-outline {
-    @apply border-2 border-ninma-teal text-ninma-teal hover:bg-ninma-teal hover:text-white active:scale-95 hover:scale-[1.03] font-medium py-2.5 px-6 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100;
+    @apply border-2 border-ninma-teal text-ninma-teal font-semibold py-2.5 px-6 rounded-xl
+           disabled:opacity-50 disabled:cursor-not-allowed;
+    transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s ease;
+  }
+  .btn-outline:hover:not(:disabled) {
+    @apply bg-ninma-teal text-white shadow-md;
+    transform: scale(1.035);
+  }
+  .btn-outline:active:not(:disabled) {
+    transform: scale(0.95);
+    transition-duration: 0.08s;
   }
 
   .btn-danger {
-    @apply bg-ninma-pink hover:bg-ninma-pink-dark active:scale-95 hover:scale-[1.03] text-white font-medium py-2.5 px-6 rounded-xl transition-all duration-200 shadow-sm hover:shadow-lg;
+    @apply bg-ninma-pink text-white font-semibold py-2.5 px-6 rounded-xl shadow-sm;
+    transition: background-color 0.18s ease, transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s ease;
+  }
+  .btn-danger:hover {
+    @apply bg-ninma-pink-dark shadow-lg;
+    transform: scale(1.035);
+  }
+  .btn-danger:active {
+    transform: scale(0.95);
+    transition-duration: 0.08s;
   }
 
   .card {

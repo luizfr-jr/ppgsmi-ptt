@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Header } from '@/components/layout/Header'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { PWAInstallPrompt } from '@/components/layout/PWAInstallPrompt'
-import { Plus, FileText, Clock, CheckCircle, AlertCircle, Edit } from 'lucide-react'
+import { Plus, FileText, Clock, CheckCircle, AlertCircle, Edit, User } from 'lucide-react'
 import { Template } from '@/types'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -23,10 +23,49 @@ const statusConfig = {
   APROVADO: { label: 'Aprovado', icon: <CheckCircle size={14} />, className: 'badge-aprovado' },
 }
 
+/** Returns true if name looks like an auto-generated email prefix (no spaces, no accents) */
+function isPlaceholderName(name: string | null, email: string): boolean {
+  if (!name) return true
+  const prefix = email.split('@')[0]
+  return name === prefix || !name.trim().includes(' ')
+}
+
 export function StudentDashboard({ user, templates }: Props) {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [currentUser, setCurrentUser] = useState(user)
+
+  // Name setup modal
+  const [showNameModal, setShowNameModal] = useState(false)
+  const [nameInput, setNameInput] = useState('')
+  const [savingName, setSavingName] = useState(false)
+
+  useEffect(() => {
+    if (isPlaceholderName(user.name, user.email)) {
+      setShowNameModal(true)
+    }
+  }, [user.name, user.email])
+
+  async function handleSaveName(e: React.FormEvent) {
+    e.preventDefault()
+    if (!nameInput.trim()) return
+    setSavingName(true)
+    try {
+      const res = await fetch('/api/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: nameInput.trim() }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setCurrentUser(prev => ({ ...prev, name: data.data.name }))
+        setShowNameModal(false)
+      }
+    } finally {
+      setSavingName(false)
+    }
+  }
 
   async function handleCreate() {
     setCreating(true)
@@ -41,27 +80,62 @@ export function StudentDashboard({ user, templates }: Props) {
     }
   }
 
+  const firstName = currentUser.name?.split(' ')[0] || 'Aluno'
+
   return (
     <div className="min-h-screen bg-ninma-gray-light flex flex-col">
-      <Header user={user} onMenuToggle={() => setMenuOpen(o => !o)} menuOpen={menuOpen} />
+      {/* Name setup modal */}
+      {showNameModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center mb-6">
+              <div className="w-16 h-16 rounded-full bg-ninma-teal-light flex items-center justify-center mb-4">
+                <User size={28} className="text-ninma-teal" />
+              </div>
+              <h2 className="text-xl font-bold text-ninma-dark">Bem-vindo ao NinMaHub!</h2>
+              <p className="text-gray-500 text-sm mt-2">
+                Para começar, informe seu nome completo.
+              </p>
+            </div>
+            <form onSubmit={handleSaveName} className="space-y-4">
+              <div>
+                <label className="label">Nome completo</label>
+                <input
+                  type="text"
+                  className="input text-center text-base"
+                  placeholder="Ex: Maria da Silva"
+                  value={nameInput}
+                  onChange={e => setNameInput(e.target.value)}
+                  autoFocus
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={savingName || !nameInput.trim()}
+                className="btn-primary w-full"
+              >
+                {savingName ? 'Salvando...' : 'Confirmar'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <Header user={currentUser} onMenuToggle={() => setMenuOpen(o => !o)} menuOpen={menuOpen} />
       <div className="flex flex-1">
         <Sidebar role="ALUNO" open={menuOpen} onClose={() => setMenuOpen(false)} />
-        <main className="flex-1 p-4 md:p-8 md:ml-0">
+        <main className="flex-1 p-4 md:p-8">
           <div className="max-w-4xl mx-auto">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h1 className="text-2xl font-bold text-ninma-dark">
-                  Olá, {user.name?.split(' ')[0] || 'Aluno'}!
-                </h1>
-                <p className="text-gray-500 mt-1">
-                  Gerencie seus templates de Produto Técnico-Tecnológico
-                </p>
-              </div>
-              <button onClick={handleCreate} disabled={creating} className="btn-primary flex items-center gap-2">
-                <Plus size={18} />
-                <span className="hidden sm:inline">Novo Template</span>
-              </button>
+
+            {/* Header — sem botão "Novo Template" no canto */}
+            <div className="mb-8">
+              <h1 className="text-2xl font-bold text-ninma-dark">
+                Olá, {firstName}! 👋
+              </h1>
+              <p className="text-gray-500 mt-1">
+                Gerencie seus templates de Produto Técnico-Tecnológico
+              </p>
             </div>
 
             {/* Stats */}
@@ -82,18 +156,28 @@ export function StudentDashboard({ user, templates }: Props) {
             {/* Templates list */}
             {templates.length === 0 ? (
               <div className="card text-center py-16">
-                <FileText size={48} className="mx-auto text-ninma-teal-light mb-4" />
-                <h3 className="text-lg font-semibold text-ninma-dark">Nenhum template criado</h3>
-                <p className="text-gray-500 mt-2 mb-6 text-sm">
-                  Crie seu primeiro template de Produto Técnico-Tecnológico
+                <div className="w-20 h-20 rounded-full bg-ninma-teal-light flex items-center justify-center mx-auto mb-5">
+                  <FileText size={36} className="text-ninma-teal" />
+                </div>
+                <h3 className="text-lg font-bold text-ninma-dark">Nenhum template criado</h3>
+                <p className="text-gray-500 mt-2 mb-8 text-sm max-w-xs mx-auto">
+                  Crie seu Template do Produto Técnico-Tecnológico (PTT).
                 </p>
-                <button onClick={handleCreate} disabled={creating} className="btn-primary">
-                  <Plus size={18} className="inline mr-2" />
-                  Criar template
+                <button onClick={handleCreate} disabled={creating} className="btn-primary inline-flex items-center gap-2">
+                  <Plus size={18} />
+                  {creating ? 'Criando...' : 'Criar template'}
                 </button>
               </div>
             ) : (
               <div className="space-y-3">
+                {/* "Novo Template" button only shown when templates already exist */}
+                <div className="flex justify-end mb-2">
+                  <button onClick={handleCreate} disabled={creating} className="btn-primary flex items-center gap-2">
+                    <Plus size={18} />
+                    <span className="hidden sm:inline">Novo Template</span>
+                  </button>
+                </div>
+
                 {templates.map(template => {
                   const status = statusConfig[template.status as keyof typeof statusConfig] || statusConfig.RASCUNHO
                   return (
