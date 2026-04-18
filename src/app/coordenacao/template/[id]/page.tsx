@@ -1,13 +1,14 @@
 import { redirect, notFound } from 'next/navigation'
-import { getSession } from '@/lib/auth'
+import { getSession, hasMinRole } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { TemplateDetailCoord } from './TemplateDetailCoord'
+import { UserRole } from '@/types'
 
 type Props = { params: Promise<{ id: string }> }
 
 export default async function TemplatePage({ params }: Props) {
   const session = await getSession()
-  if (!session || session.user.role !== 'COORDENACAO') redirect('/')
+  if (!session || !hasMinRole(session.user.role as UserRole, 'COORDENACAO')) redirect('/')
 
   const { id } = await params
   const template = await prisma.template.findUnique({

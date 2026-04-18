@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Users } from 'lucide-react'
+import { Home, Users, UserCog, ClipboardList } from 'lucide-react'
 import { clsx } from 'clsx'
 
 interface SidebarProps {
@@ -19,7 +19,13 @@ const navItems: Record<string, { href: string; label: string; icon: React.ReactN
     { href: '/orientador', label: 'Templates dos Alunos', icon: <Users size={18} /> },
   ],
   COORDENACAO: [
-    { href: '/coordenacao', label: 'Todos os Templates', icon: <Users size={18} /> },
+    { href: '/coordenacao', label: 'Todos os Templates', icon: <ClipboardList size={18} /> },
+    { href: '/coordenacao/usuarios', label: 'Gestão de Usuários', icon: <UserCog size={18} /> },
+  ],
+  SUPERADMIN: [
+    { href: '/coordenacao', label: 'Todos os Templates', icon: <ClipboardList size={18} /> },
+    { href: '/orientador', label: 'Meus Orientandos', icon: <Users size={18} /> },
+    { href: '/coordenacao/usuarios', label: 'Gestão de Usuários', icon: <UserCog size={18} /> },
   ],
 }
 

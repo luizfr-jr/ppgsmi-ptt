@@ -4,6 +4,19 @@ import { NextRequest } from 'next/server'
 import { prisma } from './db'
 import { AuthSession, UserRole } from '@/types'
 
+// Role hierarchy: higher number = more permissions
+export const ROLE_LEVEL: Record<UserRole, number> = {
+  ALUNO: 0,
+  ORIENTADOR: 1,
+  COORDENACAO: 2,
+  SUPERADMIN: 3,
+}
+
+/** Returns true if userRole has at least the permissions of minRole */
+export function hasMinRole(userRole: UserRole, minRole: UserRole): boolean {
+  return (ROLE_LEVEL[userRole] ?? 0) >= (ROLE_LEVEL[minRole] ?? 0)
+}
+
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'fallback-secret-change-in-production'
 )

@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
       ALUNO: '/dashboard',
       ORIENTADOR: '/orientador',
       COORDENACAO: '/coordenacao',
+      SUPERADMIN: '/coordenacao',
     }
 
     return NextResponse.json({

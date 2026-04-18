@@ -40,7 +40,7 @@ export function CoordDashboard({ user, templates }: Props) {
     <div className="min-h-screen bg-ninma-gray-light flex flex-col">
       <Header user={user} onMenuToggle={() => setMenuOpen(o => !o)} menuOpen={menuOpen} />
       <div className="flex flex-1">
-        <Sidebar role="COORDENACAO" open={menuOpen} onClose={() => setMenuOpen(false)} />
+        <Sidebar role={user.role} open={menuOpen} onClose={() => setMenuOpen(false)} />
         <main className="flex-1 p-4 md:p-8">
           <div className="max-w-5xl mx-auto">
             <div className="mb-8">

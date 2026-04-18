@@ -1,4 +1,4 @@
-export type UserRole = 'ALUNO' | 'ORIENTADOR' | 'COORDENACAO'
+export type UserRole = 'ALUNO' | 'ORIENTADOR' | 'COORDENACAO' | 'SUPERADMIN'
 export type TemplateStatus = 'RASCUNHO' | 'ENVIADO' | 'APROVADO' | 'REVISAO'
 
 export interface User {

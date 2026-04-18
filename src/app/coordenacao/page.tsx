@@ -1,11 +1,12 @@
 import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth'
+import { getSession, hasMinRole } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { CoordDashboard } from './CoordDashboard'
+import { UserRole } from '@/types'
 
 export default async function CoordenacaoPage() {
   const session = await getSession()
-  if (!session || session.user.role !== 'COORDENACAO') redirect('/')
+  if (!session || !hasMinRole(session.user.role as UserRole, 'COORDENACAO')) redirect('/')
 
   const templates = await prisma.template.findMany({
     include: {
