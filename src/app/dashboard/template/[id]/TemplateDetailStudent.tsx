@@ -13,7 +13,7 @@ import { ArrowLeft, Trash2 } from 'lucide-react'
 import { Template, Comment, Attachment } from '@/types'
 
 interface Props {
-  user: { id: string; email: string; name: string | null; role: string; advisorId?: string | null }
+  user: { id: string; email: string; name: string | null; role: string; advisorId?: string | null; advisor?: { name: string | null; email: string } | null }
   template: Template & { comments: Comment[]; attachments: Attachment[] }
 }
 
@@ -25,11 +25,14 @@ export function TemplateDetailStudent({ user, template: initialTemplate }: Props
   const [deleting, setDeleting] = useState(false)
 
   // Pre-fill aluno/orientador from user profile if fields are still empty
-  const advisor = (initialTemplate as any).advisor as { name: string | null; email: string } | null
+  // Priority: template.advisor (linked on template) → user.advisor (student's profile advisor)
+  const templateAdvisor = (initialTemplate as any).advisor as { name: string | null; email: string } | null
+  const profileAdvisor = currentUser.advisor
+  const advisorName = templateAdvisor?.name || profileAdvisor?.name || profileAdvisor?.email || ''
   const prefilled = {
     ...initialTemplate,
     aluno: initialTemplate.aluno || currentUser.name || '',
-    orientador: initialTemplate.orientador || advisor?.name || advisor?.email || '',
+    orientador: initialTemplate.orientador || advisorName,
   }
 
   const [template, setTemplate] = useState(prefilled)

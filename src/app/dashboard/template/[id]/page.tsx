@@ -24,10 +24,13 @@ export default async function TemplatePage({ params }: Props) {
 
   if (!template || template.studentId !== session.user.id) notFound()
 
-  // Fetch full user record (includes advisorId for setup modal)
+  // Fetch full user record (includes advisor name for auto-fill)
   const userRecord = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, email: true, name: true, role: true, advisorId: true },
+    select: {
+      id: true, email: true, name: true, role: true, advisorId: true,
+      advisor: { select: { name: true, email: true } },
+    },
   })
 
   return <TemplateDetailStudent user={userRecord as any} template={template as any} />
