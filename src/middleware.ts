@@ -9,6 +9,20 @@ const JWT_SECRET = new TextEncoder().encode(
 
 const publicPaths = ['/', '/login', '/api/auth/send-otp', '/api/auth/verify-otp']
 
+// Role hierarchy: which roles can access which areas
+const CAN_ACCESS_COORDENACAO = ['COORDENACAO', 'SUPERADMIN']
+const CAN_ACCESS_ORIENTADOR  = ['ORIENTADOR', 'COORDENACAO', 'SUPERADMIN']
+const CAN_ACCESS_DASHBOARD   = ['ALUNO']
+
+function getRoleHome(role: string): string {
+  switch (role) {
+    case 'SUPERADMIN':  return '/coordenacao'
+    case 'COORDENACAO': return '/coordenacao'
+    case 'ORIENTADOR':  return '/orientador'
+    default:            return '/dashboard'
+  }
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -17,7 +31,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/_next') ||
     pathname.startsWith('/icons') ||
     pathname.startsWith('/api/auth') ||
-    pathname.startsWith('/manifest')
+    pathname.startsWith('/manifest') ||
+    pathname.startsWith('/debug')
   ) {
     return NextResponse.next()
   }
@@ -32,27 +47,19 @@ export async function middleware(request: NextRequest) {
     const { payload } = await jwtVerify(token, JWT_SECRET)
     const role = payload.role as string
 
-    if (pathname.startsWith('/dashboard') && role !== 'ALUNO') {
+    if (pathname.startsWith('/dashboard') && !CAN_ACCESS_DASHBOARD.includes(role)) {
       return NextResponse.redirect(new URL(getRoleHome(role), request.url))
     }
-    if (pathname.startsWith('/orientador') && role !== 'ORIENTADOR') {
+    if (pathname.startsWith('/orientador') && !CAN_ACCESS_ORIENTADOR.includes(role)) {
       return NextResponse.redirect(new URL(getRoleHome(role), request.url))
     }
-    if (pathname.startsWith('/coordenacao') && role !== 'COORDENACAO') {
+    if (pathname.startsWith('/coordenacao') && !CAN_ACCESS_COORDENACAO.includes(role)) {
       return NextResponse.redirect(new URL(getRoleHome(role), request.url))
     }
 
     return NextResponse.next()
   } catch {
     return NextResponse.redirect(new URL('/', request.url))
-  }
-}
-
-function getRoleHome(role: string): string {
-  switch (role) {
-    case 'ORIENTADOR': return '/orientador'
-    case 'COORDENACAO': return '/coordenacao'
-    default: return '/dashboard'
   }
 }
 
