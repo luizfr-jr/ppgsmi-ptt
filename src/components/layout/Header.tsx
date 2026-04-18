@@ -15,6 +15,7 @@ const roleLabels: Record<string, string> = {
   ALUNO: 'Aluno',
   ORIENTADOR: 'Orientador',
   COORDENACAO: 'Coordenação',
+  SUPERADMIN: 'Super Admin',
 }
 
 export function Header({ user, onMenuToggle, menuOpen }: HeaderProps) {
@@ -49,7 +50,9 @@ export function Header({ user, onMenuToggle, menuOpen }: HeaderProps) {
             <User size={14} className="text-white" />
           </div>
           <div>
-            <div className="text-xs font-medium text-ninma-dark">{user.name || user.email}</div>
+            <div className="text-xs font-medium text-ninma-dark">
+              {user.name && user.name.includes(' ') ? user.name : user.email}
+            </div>
             <div className="text-xs text-gray-400">{roleLabels[user.role] || user.role}</div>
           </div>
         </div>

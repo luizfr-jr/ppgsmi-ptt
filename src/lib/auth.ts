@@ -68,7 +68,7 @@ export async function getOrCreateUser(email: string, role?: UserRole) {
       data: {
         email,
         role: role || 'ALUNO',
-        name: email.split('@')[0],
+        name: null, // user will set their own name on first login
       },
     })
   }
