@@ -6,14 +6,20 @@ import Link from 'next/link'
 import { Header } from '@/components/layout/Header'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { PWAInstallPrompt } from '@/components/layout/PWAInstallPrompt'
-import { Plus, FileText, Clock, CheckCircle, AlertCircle, Edit, User } from 'lucide-react'
+import { Plus, FileText, Clock, CheckCircle, AlertCircle, Edit, User, ChevronDown } from 'lucide-react'
 import { Template } from '@/types'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 interface Props {
-  user: { id: string; email: string; name: string | null; role: string }
+  user: { id: string; email: string; name: string | null; role: string; advisorId?: string | null }
   templates: Template[]
+}
+
+interface Orientador {
+  id: string
+  name: string | null
+  email: string
 }
 
 const statusConfig = {
@@ -23,11 +29,11 @@ const statusConfig = {
   APROVADO: { label: 'Aprovado', icon: <CheckCircle size={14} />, className: 'badge-aprovado' },
 }
 
-/** Returns true if name looks like an auto-generated email prefix (no spaces, no accents) */
-function isPlaceholderName(name: string | null, email: string): boolean {
-  if (!name) return true
-  const prefix = email.split('@')[0]
-  return name === prefix || !name.trim().includes(' ')
+function needsSetup(user: Props['user']): boolean {
+  if (!user.name) return true
+  const prefix = user.email.split('@')[0]
+  // If name is the email prefix (auto-generated) or has no space, prompt setup
+  return user.name === prefix || !user.name.trim().includes(' ')
 }
 
 export function StudentDashboard({ user, templates }: Props) {
@@ -36,34 +42,68 @@ export function StudentDashboard({ user, templates }: Props) {
   const [creating, setCreating] = useState(false)
   const [currentUser, setCurrentUser] = useState(user)
 
-  // Name setup modal
-  const [showNameModal, setShowNameModal] = useState(false)
+  // Setup modal state
+  const [showModal, setShowModal] = useState(false)
+  const [step, setStep] = useState<'name' | 'advisor'>('name')
   const [nameInput, setNameInput] = useState('')
-  const [savingName, setSavingName] = useState(false)
+  const [selectedAdvisorId, setSelectedAdvisorId] = useState('')
+  const [orientadores, setOrientadores] = useState<Orientador[]>([])
+  const [savingSetup, setSavingSetup] = useState(false)
+  const [loadingAdvisors, setLoadingAdvisors] = useState(false)
 
   useEffect(() => {
-    if (isPlaceholderName(user.name, user.email)) {
-      setShowNameModal(true)
+    if (needsSetup(user)) {
+      setShowModal(true)
     }
-  }, [user.name, user.email])
+  }, [user])
 
-  async function handleSaveName(e: React.FormEvent) {
+  async function loadOrientadores() {
+    setLoadingAdvisors(true)
+    try {
+      const res = await fetch('/api/users?role=ORIENTADOR')
+      const data = await res.json()
+      if (data.success) {
+        // Also fetch COORDENACAO users who can also be advisors
+        const res2 = await fetch('/api/users?role=COORDENACAO')
+        const data2 = await res2.json()
+        const all = [...(data.data || []), ...(data2.data || [])]
+        setOrientadores(all)
+      }
+    } finally {
+      setLoadingAdvisors(false)
+    }
+  }
+
+  function handleNameNext(e: React.FormEvent) {
     e.preventDefault()
     if (!nameInput.trim()) return
-    setSavingName(true)
+    setStep('advisor')
+    loadOrientadores()
+  }
+
+  async function handleFinishSetup(e: React.FormEvent) {
+    e.preventDefault()
+    setSavingSetup(true)
     try {
       const res = await fetch('/api/users', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: nameInput.trim() }),
+        body: JSON.stringify({
+          name: nameInput.trim(),
+          advisorId: selectedAdvisorId || null,
+        }),
       })
       const data = await res.json()
       if (data.success) {
-        setCurrentUser(prev => ({ ...prev, name: data.data.name }))
-        setShowNameModal(false)
+        setCurrentUser(prev => ({
+          ...prev,
+          name: data.data.name,
+          advisorId: data.data.advisorId,
+        }))
+        setShowModal(false)
       }
     } finally {
-      setSavingName(false)
+      setSavingSetup(false)
     }
   }
 
@@ -84,40 +124,108 @@ export function StudentDashboard({ user, templates }: Props) {
 
   return (
     <div className="min-h-screen bg-ninma-gray-light flex flex-col">
-      {/* Name setup modal */}
-      {showNameModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex flex-col items-center text-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-ninma-teal-light flex items-center justify-center mb-4">
-                <User size={28} className="text-ninma-teal" />
-              </div>
-              <h2 className="text-xl font-bold text-ninma-dark">Bem-vindo ao NinMaHub!</h2>
-              <p className="text-gray-500 text-sm mt-2">
-                Para começar, informe seu nome completo.
-              </p>
+
+      {/* ── Setup Modal ── */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8">
+
+            {/* Step indicators */}
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <div className={`w-2.5 h-2.5 rounded-full transition-all ${step === 'name' ? 'bg-ninma-teal scale-125' : 'bg-ninma-teal'}`} />
+              <div className={`w-16 h-0.5 ${step === 'advisor' ? 'bg-ninma-teal' : 'bg-gray-200'} transition-all`} />
+              <div className={`w-2.5 h-2.5 rounded-full transition-all ${step === 'advisor' ? 'bg-ninma-teal scale-125' : 'bg-gray-200'}`} />
             </div>
-            <form onSubmit={handleSaveName} className="space-y-4">
-              <div>
-                <label className="label">Nome completo</label>
-                <input
-                  type="text"
-                  className="input text-center text-base"
-                  placeholder="Ex: Maria da Silva"
-                  value={nameInput}
-                  onChange={e => setNameInput(e.target.value)}
-                  autoFocus
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={savingName || !nameInput.trim()}
-                className="btn-primary w-full"
-              >
-                {savingName ? 'Salvando...' : 'Confirmar'}
-              </button>
-            </form>
+
+            {step === 'name' ? (
+              <>
+                <div className="flex flex-col items-center text-center mb-6">
+                  <div className="w-16 h-16 rounded-full bg-ninma-teal-light flex items-center justify-center mb-4">
+                    <User size={28} className="text-ninma-teal" />
+                  </div>
+                  <h2 className="text-xl font-bold text-ninma-dark">Bem-vindo ao NinMaHub!</h2>
+                  <p className="text-gray-500 text-sm mt-2">
+                    Informe seu nome completo para começar.
+                  </p>
+                </div>
+                <form onSubmit={handleNameNext} className="space-y-4">
+                  <div>
+                    <label className="label">Nome completo *</label>
+                    <input
+                      type="text"
+                      className="input text-center text-base"
+                      placeholder="Ex: Maria da Silva"
+                      value={nameInput}
+                      onChange={e => setNameInput(e.target.value)}
+                      autoFocus
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!nameInput.trim()}
+                    className="btn-primary w-full"
+                  >
+                    Continuar →
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col items-center text-center mb-6">
+                  <div className="w-16 h-16 rounded-full bg-ninma-purple-light flex items-center justify-center mb-4">
+                    <User size={28} className="text-ninma-purple" />
+                  </div>
+                  <h2 className="text-xl font-bold text-ninma-dark">Seu Orientador</h2>
+                  <p className="text-gray-500 text-sm mt-2">
+                    Selecione o professor que orienta seu trabalho.
+                  </p>
+                </div>
+                <form onSubmit={handleFinishSetup} className="space-y-4">
+                  <div className="relative">
+                    <label className="label">Orientador *</label>
+                    {loadingAdvisors ? (
+                      <div className="input flex items-center gap-2 text-gray-400">
+                        <span className="animate-spin">⏳</span> Carregando...
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <select
+                          className="input appearance-none pr-10"
+                          value={selectedAdvisorId}
+                          onChange={e => setSelectedAdvisorId(e.target.value)}
+                          required
+                        >
+                          <option value="">Selecione seu orientador...</option>
+                          {orientadores.map(o => (
+                            <option key={o.id} value={o.id}>
+                              {o.name || o.email}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setStep('name')}
+                      className="btn-outline flex-1"
+                    >
+                      ← Voltar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingSetup || !selectedAdvisorId}
+                      className="btn-primary flex-1"
+                    >
+                      {savingSetup ? 'Salvando...' : 'Começar!'}
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -128,7 +236,6 @@ export function StudentDashboard({ user, templates }: Props) {
         <main className="flex-1 p-4 md:p-8">
           <div className="max-w-4xl mx-auto">
 
-            {/* Header — sem botão "Novo Template" no canto */}
             <div className="mb-8">
               <h1 className="text-2xl font-bold text-ninma-dark">
                 Olá, {firstName}! 👋
@@ -153,7 +260,7 @@ export function StudentDashboard({ user, templates }: Props) {
               ))}
             </div>
 
-            {/* Templates list */}
+            {/* Templates */}
             {templates.length === 0 ? (
               <div className="card text-center py-16">
                 <div className="w-20 h-20 rounded-full bg-ninma-teal-light flex items-center justify-center mx-auto mb-5">
@@ -170,14 +277,12 @@ export function StudentDashboard({ user, templates }: Props) {
               </div>
             ) : (
               <div className="space-y-3">
-                {/* "Novo Template" button only shown when templates already exist */}
                 <div className="flex justify-end mb-2">
                   <button onClick={handleCreate} disabled={creating} className="btn-primary flex items-center gap-2">
                     <Plus size={18} />
                     <span className="hidden sm:inline">Novo Template</span>
                   </button>
                 </div>
-
                 {templates.map(template => {
                   const status = statusConfig[template.status as keyof typeof statusConfig] || statusConfig.RASCUNHO
                   return (

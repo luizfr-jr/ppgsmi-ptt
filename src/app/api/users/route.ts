@@ -65,19 +65,22 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/** PATCH /api/users — update own profile name */
+/** PATCH /api/users — update own profile (name, advisorId) */
 export async function PATCH(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ success: false, error: 'Não autenticado' }, { status: 401 })
 
   try {
     const body = await req.json()
-    const { name } = body
+    const { name, advisorId } = body
 
     const updated = await prisma.user.update({
       where: { id: session.user.id },
-      data: { name },
-      select: { id: true, name: true, email: true, role: true },
+      data: {
+        ...(name !== undefined && { name }),
+        ...(advisorId !== undefined && { advisorId: advisorId || null }),
+      },
+      select: { id: true, name: true, email: true, role: true, advisorId: true },
     })
 
     return NextResponse.json({ success: true, data: updated })

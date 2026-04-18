@@ -12,9 +12,14 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   name      String?
-  role      String   @default("ALUNO") // ALUNO | ORIENTADOR | COORDENACAO
+  role      String   @default("ALUNO") // ALUNO | ORIENTADOR | COORDENACAO | SUPERADMIN
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Aluno's linked advisor (set on first login)
+  advisorId String?
+  advisor   User?    @relation("StudentAdvisor", fields: [advisorId], references: [id], onDelete: SetNull)
+  students  User[]   @relation("StudentAdvisor")
 
   // Relations
   templates        Template[] @relation("StudentTemplates")
