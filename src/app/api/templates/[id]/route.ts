@@ -7,7 +7,7 @@ type Params = { params: Promise<{ id: string }> }
 async function checkAccess(templateId: string, userId: string, role: string) {
   const template = await prisma.template.findUnique({ where: { id: templateId } })
   if (!template) return null
-  if (role === 'COORDENACAO') return template
+  if (role === 'COORDENACAO' || role === 'SUPERADMIN') return template
   if (role === 'ALUNO' && template.studentId === userId) return template
   if (role === 'ORIENTADOR' && template.advisorId === userId) return template
   return null
@@ -57,8 +57,19 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   try {
     const body = await req.json()
-    // Remove fields that shouldn't be updated directly
-    const { id: _id, studentId: _sid, createdAt: _ca, ...updateData } = body
+    // Strip out relational/non-updatable fields before sending to Prisma
+    const {
+      id: _id,
+      studentId: _sid,
+      advisorId: _aid,
+      createdAt: _ca,
+      updatedAt: _ua,
+      advisor: _advisor,
+      student: _student,
+      comments: _comments,
+      attachments: _attachments,
+      ...updateData
+    } = body
 
     const updated = await prisma.template.update({
       where: { id },
