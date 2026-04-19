@@ -34,6 +34,7 @@ model Attachment {
   mimeType     String
   size         Int
   url          String
+  section      String?  // null = campo 27 (Anexos gerais) | 'divulgacao' = campo 26
   createdAt    DateTime @default(now())
 
   templateId   String

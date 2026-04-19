@@ -67,6 +67,7 @@ export interface Attachment {
   mimeType: string
   size: number
   url: string
+  section?: string | null
   createdAt: Date
   templateId: string
 }

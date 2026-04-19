@@ -8,6 +8,7 @@ interface Props {
   templateId: string
   initial: Attachment[]
   readOnly?: boolean
+  section?: string // e.g. 'divulgacao' — kept on upload to tag the attachment
 }
 
 function isImage(mime: string) {
@@ -20,7 +21,7 @@ function formatSize(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
-export function AttachmentsUploader({ templateId, initial, readOnly = false }: Props) {
+export function AttachmentsUploader({ templateId, initial, readOnly = false, section }: Props) {
   const [list, setList] = useState<Attachment[]>(initial)
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
@@ -31,6 +32,7 @@ export function AttachmentsUploader({ templateId, initial, readOnly = false }: P
     setUploading(true)
     const formData = new FormData()
     Array.from(files).forEach(f => formData.append('files', f))
+    if (section) formData.append('section', section)
     try {
       const res = await fetch(`/api/templates/${templateId}/attachments`, {
         method: 'POST',

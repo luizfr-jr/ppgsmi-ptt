@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { Save, Download, Send, CheckCircle, RotateCcw } from 'lucide-react'
+import { Save, Download, Send, CheckCircle, RotateCcw, AlertCircle, Link } from 'lucide-react'
 import { TemplateStatus } from '@/types'
 import { RadioGroup } from './RadioGroup'
 import { NinMaLogo } from '@/components/layout/NinMaLogo'
@@ -38,6 +38,11 @@ const SECTOR_OPTIONS = [
   { value: 'SERVICOS_DOM', label: 'Serviços domésticos' },
   { value: 'ORGANISMOS_INTL', label: 'Organismos internacionais e outras instituições extraterritoriais' },
 ]
+
+function isValidUrl(url: string): boolean {
+  if (!url) return false
+  try { new URL(url); return true } catch { return false }
+}
 
 export function TemplateForm({ template: initialTemplate, attachments = [], readOnly = false, canChangeStatus = false, onSaved }: TemplateFormProps) {
   const [template, setTemplate] = useState(initialTemplate)
@@ -796,14 +801,49 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
           <span className="field-number">25</span>
           Endereço do Produto Técnico-Tecnológico – URL
         </div>
-        <input
-          type="url"
-          className="input"
-          placeholder="https://..."
-          value={template.urlProduto || ''}
-          onChange={e => update('urlProduto', e.target.value)}
-          disabled={readOnly}
-        />
+        <div className="relative">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <Link size={15} />
+          </div>
+          <input
+            type="text"
+            className={`input pl-9 pr-10 transition-colors ${
+              template.urlProduto
+                ? isValidUrl(template.urlProduto)
+                  ? 'border-green-400 focus:border-green-500'
+                  : 'border-red-400 focus:border-red-500'
+                : ''
+            }`}
+            placeholder="https://..."
+            value={template.urlProduto || ''}
+            onChange={e => update('urlProduto', e.target.value)}
+            disabled={readOnly}
+          />
+          {template.urlProduto && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              {isValidUrl(template.urlProduto) ? (
+                <CheckCircle size={16} className="text-green-500" />
+              ) : (
+                <AlertCircle size={16} className="text-red-400" />
+              )}
+            </div>
+          )}
+        </div>
+        {template.urlProduto && !isValidUrl(template.urlProduto) && (
+          <p className="text-xs text-red-400 mt-1.5 flex items-center gap-1">
+            <AlertCircle size={12} /> URL inválida. Inclua o protocolo (ex: https://site.com)
+          </p>
+        )}
+        {template.urlProduto && isValidUrl(template.urlProduto) && (
+          <a
+            href={template.urlProduto}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-ninma-teal hover:underline mt-1.5 inline-flex items-center gap-1"
+          >
+            <Link size={11} /> Abrir link
+          </a>
+        )}
       </div>
 
       {/* CAMPO 26 - Divulgação */}
@@ -812,13 +852,19 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
           <span className="field-number">26</span>
           Divulgação
         </div>
-        <p className="text-xs text-gray-500 mb-3">Inserir foto/imagens e reportagens com link.</p>
+        <p className="text-xs text-gray-500 mb-3">Descreva as formas de divulgação e/ou anexe fotos, imagens e reportagens.</p>
         <textarea
-          className="textarea"
-          placeholder="Descreva as formas de divulgação (fotos, imagens, reportagens com links)"
+          className="textarea mb-4"
+          placeholder="Links de reportagens, publicações, redes sociais..."
           value={template.divulgacao || ''}
           onChange={e => update('divulgacao', e.target.value)}
           disabled={readOnly}
+        />
+        <AttachmentsUploader
+          templateId={template.id}
+          initial={attachments.filter(a => a.section === 'divulgacao')}
+          readOnly={readOnly}
+          section="divulgacao"
         />
       </div>
 
@@ -844,7 +890,7 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
         </div>
         <AttachmentsUploader
           templateId={template.id}
-          initial={attachments}
+          initial={attachments.filter(a => !a.section)}
           readOnly={readOnly}
         />
       </div>

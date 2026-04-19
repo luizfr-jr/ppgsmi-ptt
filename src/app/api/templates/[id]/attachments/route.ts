@@ -35,6 +35,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   try {
     const formData = await req.formData()
     const files = formData.getAll('files') as File[]
+    const section = (formData.get('section') as string | null) || null
 
     if (!files.length) {
       return NextResponse.json({ success: false, error: 'Nenhum arquivo enviado' }, { status: 400 })
@@ -69,6 +70,7 @@ export async function POST(req: NextRequest, { params }: Params) {
           size: file.size,
           url,
           templateId: id,
+          ...(section ? { section } : {}),
         },
       })
       created.push(attachment)
