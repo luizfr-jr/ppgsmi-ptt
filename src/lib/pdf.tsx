@@ -831,10 +831,6 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
             </View>
           </View>
 
-          <View style={s.closingFoot}>
-            <Text style={s.closingFootText}>{meta.docId}</Text>
-            <Text style={s.closingFootText}>Página 08 / 08 · {meta.dateShort}</Text>
-          </View>
         </View>
       </Page>
 
