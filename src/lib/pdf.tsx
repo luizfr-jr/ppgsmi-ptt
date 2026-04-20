@@ -421,18 +421,17 @@ function FixedHead({ section, docId, images }: { section: string; docId: string;
 }
 
 // Fixed foot — absolutely positioned at bottom of every page via render prop
+// IMPORTANT: position:absolute must be on the OUTER fixed View, not inside render()
 // Note: @react-pdf v4 render prop only exposes { pageNumber, subPageNumber }; totalPages unavailable
 function FixedFoot({ date }: { date: string }) {
   return (
-    <View fixed render={({ pageNumber }) => (
-      <View style={s.footAbs}>
-        <View style={s.foot}>
-          <Text style={s.footLeft}>NinMaHub · PPGSMI · UFN</Text>
-          <View style={s.footPageWrap}>
-            <Text style={s.footPage}>{String(pageNumber).padStart(2, '0')}</Text>
-          </View>
-          <Text style={s.footRight}>{date}</Text>
+    <View fixed style={s.footAbs} render={({ pageNumber }) => (
+      <View style={s.foot}>
+        <Text style={s.footLeft}>NinMaHub · PPGSMI · UFN</Text>
+        <View style={s.footPageWrap}>
+          <Text style={s.footPage}>{String(pageNumber).padStart(2, '0')}</Text>
         </View>
+        <Text style={s.footRight}>{date}</Text>
       </View>
     )} />
   )
