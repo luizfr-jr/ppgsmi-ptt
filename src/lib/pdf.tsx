@@ -343,7 +343,8 @@ function SealLine({ width = 130 }: { width?: number }) {
 }
 
 // ─── RichText — detects URLs and renders as clickable Link ───────────────
-function RichText({ text, style }: { text: string; style: object }) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function RichText({ text, style }: { text: string; style: any }) {
   const URL_RE = /https?:\/\/[^\s]+/g
   const parts: { txt: string; isUrl: boolean }[] = []
   let last = 0
