@@ -2,7 +2,7 @@
 // Implementado seguindo o RECIPES.md do handoff (nova versão com PNG backgrounds)
 // @react-pdf/renderer — client-side only (import dynamicamente)
 import {
-  Document, Page, Text, View, StyleSheet, Image, Font,
+  Document, Page, Text, View, StyleSheet, Image, Font, Link,
   Svg, Circle, Defs, LinearGradient, Stop, Rect,
   pdf,
 } from '@react-pdf/renderer'
@@ -95,6 +95,28 @@ const complexLabels:  Record<string,string> = { ALTA:'Alta', MEDIA:'Média', BAI
 const inovacaoLabels: Record<string,string> = { ALTO:'Alto teor inovativo', MEDIO:'Médio teor inovativo', BAIXO:'Baixo teor inovativo', SEM:'Sem Inovação' }
 const fomentosLabels: Record<string,string> = { FINANCIAMENTO:'Financiamento', COOPERACAO:'Cooperação' }
 const areaLabels:     Record<string,string> = { ECONOMICO:'Econômico', SAUDE:'Saúde', ENSINO:'Ensino', SOCIAL:'Social', AMBIENTAL:'Ambiental', CIENTIFICO:'Científico', APRENDIZAGEM:'Aprendizagem', CULTURAL:'Cultural' }
+// Setor da sociedade — espelha exatamente o SECTOR_OPTIONS do formulário
+const setorLabels:    Record<string,string> = {
+  AGRICULTURA:      'Agricultura, pecuária, prod. florestal, pesca e aquicultura',
+  INDUSTRIA:        'Indústria de transformação',
+  AGUA_ESGOTO:      'Água, esgoto, atividades de gestão de resíduos e descontaminação',
+  CONSTRUCAO:       'Construção',
+  COMERCIO:         'Comércio, reparação e veículos automotores e motocicletas',
+  TRANSPORTE:       'Transporte, armazenagem e correio',
+  ALOJAMENTO:       'Alojamento e alimentação',
+  INFORMACAO:       'Informação e comunicação',
+  FINANCEIRO:       'Atividades financeiras, de seguros e serviços relacionados',
+  IMOBILIARIO:      'Atividades imobiliárias',
+  PROFISSIONAL:     'Atividades profissionais, científicas e técnicas',
+  ADMINISTRATIVO:   'Atividades administrativas e serviços complementares',
+  ADM_PUBLICA:      'Administração pública, defesa e seguridade social',
+  EDUCACAO:         'Educação',
+  SAUDE:            'Saúde humana e serviços sociais',
+  ARTES:            'Artes, cultura, esporte e recreação',
+  OUTROS_SERVICOS:  'Outras atividades de serviços',
+  SERVICOS_DOM:     'Serviços domésticos',
+  ORGANISMOS_INTL:  'Organismos internacionais e outras instituições extraterritoriais',
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 const val      = (v: string|null|undefined) => v?.trim() || '—'
@@ -168,7 +190,7 @@ const s = StyleSheet.create({
 
   // ── Content page ──
   pg: {
-    flexDirection: 'column', height: '100%',
+    flexDirection: 'column', minHeight: '100%',
     paddingHorizontal: 52, paddingTop: 44, paddingBottom: 48,
     backgroundColor: C.paper,
   },
@@ -320,6 +342,34 @@ function SealLine({ width = 130 }: { width?: number }) {
   )
 }
 
+// ─── RichText — detects URLs and renders as clickable Link ───────────────
+function RichText({ text, style }: { text: string; style: object }) {
+  const URL_RE = /https?:\/\/[^\s]+/g
+  const parts: { txt: string; isUrl: boolean }[] = []
+  let last = 0
+  let m: RegExpExecArray | null
+  while ((m = URL_RE.exec(text)) !== null) {
+    if (m.index > last) parts.push({ txt: text.slice(last, m.index), isUrl: false })
+    // strip trailing punctuation that isn't part of the URL itself
+    const clean = m[0].replace(/[.,;:!?)]+$/, '')
+    const tail  = m[0].slice(clean.length)
+    parts.push({ txt: clean, isUrl: true })
+    if (tail) parts.push({ txt: tail, isUrl: false })
+    last = m.index + m[0].length
+  }
+  if (last < text.length) parts.push({ txt: text.slice(last), isUrl: false })
+  if (!parts.some(p => p.isUrl)) return <Text style={style}>{text}</Text>
+  return (
+    <Text style={style}>
+      {parts.map((p, i) =>
+        p.isUrl
+          ? <Link key={i} src={p.txt}><Text style={{ color: C.purple, textDecoration: 'underline' }}>{p.txt}</Text></Link>
+          : <Text key={i}>{p.txt}</Text>
+      )}
+    </Text>
+  )
+}
+
 // ─── Shared chrome ────────────────────────────────────────────────────────
 interface Images {
   ninma: string | null
@@ -370,7 +420,10 @@ function Field({ item }: { item: FieldItem }) {
       <View style={s.fieldSubArrow}><Text style={s.fieldSubArrowText}>↳</Text></View>
       <View style={s.fieldBody}>
         <Text style={s.fieldSubLabel}>{item.label}</Text>
-        <Text style={empty ? s.fieldEmpty : s.fieldValue}>{empty ? '—' : String(item.value)}</Text>
+        {empty
+          ? <Text style={s.fieldEmpty}>—</Text>
+          : <RichText text={String(item.value)} style={s.fieldValue} />
+        }
       </View>
     </View>
   )
@@ -380,8 +433,10 @@ function Field({ item }: { item: FieldItem }) {
       <View style={s.fieldBody}>
         <Text style={s.fieldLabel}>{item.label.toUpperCase()}</Text>
         {item.list && Array.isArray(item.value)
-          ? <View>{item.value.map((v,i) => <Text key={i} style={s.fieldListItem}>• {v}</Text>)}</View>
-          : <Text style={empty ? s.fieldEmpty : s.fieldValue}>{empty ? '—' : String(item.value)}</Text>
+          ? <View>{item.value.map((v,i) => <Text key={i} style={s.fieldListItem}>{v}</Text>)}</View>
+          : empty
+            ? <Text style={s.fieldEmpty}>—</Text>
+            : <RichText text={String(item.value)} style={s.fieldValue} />
         }
       </View>
     </View>
@@ -400,7 +455,7 @@ interface DocData {
 
 function buildDocData(template: Template, attachments: Attachment[]): DocData {
   const areas   = parseJSON(template.impactoArea).map(k => areaLabels[k]||k)
-  const setores = parseJSON(template.setorBeneficiado)
+  const setores = parseJSON(template.setorBeneficiado).map(k => setorLabels[k]||k)
   const isoDate = template.data || new Date().toISOString().split('T')[0]
 
   const prodFields: FieldItem[] = [
