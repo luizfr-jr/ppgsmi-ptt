@@ -244,7 +244,7 @@ const s = StyleSheet.create({
   fieldSubArrow: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   fieldSubArrowText: { fontSize: 12, color: C.muted },
   fieldBody:     { flex: 1 },
-  fieldLabel:    { fontSize: 8, fontWeight: 700, letterSpacing: 0.8, color: C.muted, marginBottom: 3 },
+  fieldLabel:    { fontSize: 9.5, fontWeight: 700, letterSpacing: 0.6, color: C.purple, marginBottom: 4 },
   fieldSubLabel: { fontSize: 9.5, fontStyle: 'italic', fontWeight: 500, color: C.inkSoft, marginBottom: 3 },
   fieldValue:    { fontSize: 11, lineHeight: 1.6, color: C.ink },
   fieldEmpty:    { fontSize: 11, lineHeight: 1.6, color: C.muted, fontStyle: 'italic' },
