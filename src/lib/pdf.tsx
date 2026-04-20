@@ -429,7 +429,7 @@ function FixedFoot({ date }: { date: string }) {
       <View style={s.foot}>
         <Text style={s.footLeft}>NinMaHub · PPGSMI · UFN</Text>
         <View style={s.footPageWrap}>
-          <Text style={s.footPage}>{String(pageNumber).padStart(2, '0')}</Text>
+          <Text style={s.footPage}>{String(pageNumber - 1).padStart(2, '0')}</Text>
         </View>
         <Text style={s.footRight}>{date}</Text>
       </View>
@@ -649,14 +649,6 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
             </View>
           </View>
 
-          {/* Footer */}
-          <View style={s.coverFoot}>
-            <Text style={s.coverFootText}> </Text>
-            <View style={s.dotBar}>
-              {dotColors.map((c,i) => <View key={i} style={[s.dot, { backgroundColor: c }]} />)}
-            </View>
-            <Text style={s.coverFootText}>{meta.docId}</Text>
-          </View>
         </View>
       </Page>
 
@@ -845,10 +837,6 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
             </View>
           </View>
 
-          <View style={s.closingFoot}>
-            <Text style={s.closingFootText}>{meta.docId}</Text>
-            <Text style={s.closingFootText}>Página 08 / 08 · {meta.dateShort}</Text>
-          </View>
         </View>
       </Page>
 
