@@ -1,7 +1,10 @@
 // Layout D — Dossiê Científico PPGSMI
-// @react-pdf/renderer — client-side only (import dynamically)
+// Implementado seguindo o RECIPES.md do handoff (nova versão com PNG backgrounds)
+// @react-pdf/renderer — client-side only (import dynamicamente)
 import {
-  Document, Page, Text, View, StyleSheet, Image, Font, Svg, Circle, pdf,
+  Document, Page, Text, View, StyleSheet, Image, Font,
+  Svg, Circle, Defs, LinearGradient, Stop, Rect,
+  pdf,
 } from '@react-pdf/renderer'
 import { Template, Attachment } from '@/types'
 
@@ -19,9 +22,9 @@ function ensureFonts() {
         { src: `${o}/fonts/inter-500.ttf`, fontWeight: 500 },
         { src: `${o}/fonts/inter-500-italic.ttf`, fontWeight: 500, fontStyle: 'italic' },
         { src: `${o}/fonts/inter-600.ttf`, fontWeight: 600 },
-        { src: `${o}/fonts/inter-600.ttf`, fontWeight: 600, fontStyle: 'italic' }, // no 600 italic — use regular
+        { src: `${o}/fonts/inter-600.ttf`, fontWeight: 600, fontStyle: 'italic' },
         { src: `${o}/fonts/inter-700.ttf`, fontWeight: 700 },
-        { src: `${o}/fonts/inter-700.ttf`, fontWeight: 700, fontStyle: 'italic' }, // no 700 italic — use regular
+        { src: `${o}/fonts/inter-700.ttf`, fontWeight: 700, fontStyle: 'italic' },
       ],
     })
     Font.register({
@@ -41,15 +44,15 @@ function ensureFonts() {
         { src: `${o}/fonts/jetbrainsmono-700.ttf`, fontWeight: 700 },
       ],
     })
-    Font.registerHyphenationCallback(w => [w]) // disable hyphenation
+    Font.registerHyphenationCallback(w => [w])
     fontsRegistered = true
   } catch (err) {
     console.warn('[pdf] Font registration failed, using built-in fonts', err)
-    fontsRegistered = true // prevent retry
+    fontsRegistered = true
   }
 }
 
-// ─── Pre-fetch image as data URL (safe, no CORS issues) ──────────────────
+// ─── Pre-fetch image as data URL ──────────────────────────────────────────
 async function fetchDataURL(url: string): Promise<string | null> {
   try {
     const res = await fetch(url)
@@ -61,18 +64,15 @@ async function fetchDataURL(url: string): Promise<string | null> {
       reader.onerror = () => resolve(null)
       reader.readAsDataURL(blob)
     })
-  } catch {
-    return null
-  }
+  } catch { return null }
 }
 
-// ─── Brand colours (PPGSMI manual de marca) ───────────────────────────────
+// ─── Brand colours ────────────────────────────────────────────────────────
 const C = {
   rose:       '#D43E5C',
   purple:     '#6B5EA0',
   teal:       '#6BB49D',
   coral:      '#E89A5C',
-  roseSoft:   '#fbe8ee',
   purpleSoft: '#edeaf4',
   tealSoft:   '#e6f4ef',
   coralSoft:  '#fbeddb',
@@ -84,351 +84,258 @@ const C = {
 }
 
 // ─── Label maps ───────────────────────────────────────────────────────────
-const linhaLabels: Record<string, string> = {
-  SAUDE_MATERNA: 'Atenção integral à saúde materna, neonatal e infantil',
-  GESTAO_REDE:   'Organização e gestão da rede de atenção à saúde materno infantil',
-}
-const nivelLabels:    Record<string, string> = { ALTO:'Alto', MEDIO:'Médio', BAIXO:'Baixo' }
-const demandaLabels:  Record<string, string> = { ESPONTANEO:'Espontânea', CONCORRENCIA:'Por concorrência', CONTRATADA:'Contratada' }
-const objetivoLabels: Record<string, string> = { EXPERIMENTAL:'Experimental', SOLUCAO_PROBLEMA:'Solução de um problema previamente identificado', SEM_FOCO:'Sem um foco de aplicação inicialmente definido' }
-const tipoLabels:     Record<string, string> = { REAL:'Real', POTENCIAL:'Potencial' }
-const boolLabels:     Record<string, string> = { SIM:'Sim', NAO:'Não' }
-const abrangLabels:   Record<string, string> = { INTERNACIONAL:'Internacional', NACIONAL:'Nacional', REGIONAL:'Regional', LOCAL:'Local' }
-const complexLabels:  Record<string, string> = { ALTA:'Alta', MEDIA:'Média', BAIXA:'Baixa' }
-const inovacaoLabels: Record<string, string> = { ALTO:'Alto teor inovativo', MEDIO:'Médio teor inovativo', BAIXO:'Baixo teor inovativo', SEM:'Sem Inovação' }
-const fomentosLabels: Record<string, string> = { FINANCIAMENTO:'Financiamento', COOPERACAO:'Cooperação' }
-const areaLabels:     Record<string, string> = {
-  ECONOMICO:'Econômico', SAUDE:'Saúde', ENSINO:'Ensino', SOCIAL:'Social',
-  AMBIENTAL:'Ambiental', CIENTIFICO:'Científico', APRENDIZAGEM:'Aprendizagem', CULTURAL:'Cultural',
-}
+const linhaLabels:    Record<string,string> = { SAUDE_MATERNA:'Atenção integral à saúde materna, neonatal e infantil', GESTAO_REDE:'Organização e gestão da rede de atenção à saúde materno infantil' }
+const nivelLabels:    Record<string,string> = { ALTO:'Alto', MEDIO:'Médio', BAIXO:'Baixo' }
+const demandaLabels:  Record<string,string> = { ESPONTANEO:'Espontânea', CONCORRENCIA:'Por concorrência', CONTRATADA:'Contratada' }
+const objetivoLabels: Record<string,string> = { EXPERIMENTAL:'Experimental', SOLUCAO_PROBLEMA:'Solução de um problema previamente identificado', SEM_FOCO:'Sem um foco de aplicação inicialmente definido' }
+const tipoLabels:     Record<string,string> = { REAL:'Real', POTENCIAL:'Potencial' }
+const boolLabels:     Record<string,string> = { SIM:'Sim', NAO:'Não' }
+const abrangLabels:   Record<string,string> = { INTERNACIONAL:'Internacional', NACIONAL:'Nacional', REGIONAL:'Regional', LOCAL:'Local' }
+const complexLabels:  Record<string,string> = { ALTA:'Alta', MEDIA:'Média', BAIXA:'Baixa' }
+const inovacaoLabels: Record<string,string> = { ALTO:'Alto teor inovativo', MEDIO:'Médio teor inovativo', BAIXO:'Baixo teor inovativo', SEM:'Sem Inovação' }
+const fomentosLabels: Record<string,string> = { FINANCIAMENTO:'Financiamento', COOPERACAO:'Cooperação' }
+const areaLabels:     Record<string,string> = { ECONOMICO:'Econômico', SAUDE:'Saúde', ENSINO:'Ensino', SOCIAL:'Social', AMBIENTAL:'Ambiental', CIENTIFICO:'Científico', APRENDIZAGEM:'Aprendizagem', CULTURAL:'Cultural' }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
-const val  = (v: string | null | undefined) => v?.trim() || '—'
-const look = (map: Record<string, string>, k: string | null | undefined) =>
-  (k && map[k]) ? map[k] : '—'
-const parseJSON  = (s: string | null | undefined): string[] => {
-  try { return JSON.parse(s || '[]') } catch { return [] }
-}
-const fmtDateLong = (iso: string | null | undefined) => {
+const val      = (v: string|null|undefined) => v?.trim() || '—'
+const look     = (map: Record<string,string>, k: string|null|undefined) => (k && map[k]) ? map[k] : '—'
+const parseJSON = (s: string|null|undefined): string[] => { try { return JSON.parse(s||'[]') } catch { return [] } }
+const fmtLong  = (iso: string|null|undefined) => {
   if (!iso) return '—'
-  const [y, m, d] = iso.split('-')
+  const [y,m,d] = iso.split('-')
   const months = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']
-  return `${parseInt(d)} de ${months[parseInt(m) - 1]} de ${y}`
+  return `${parseInt(d)} de ${months[parseInt(m)-1]} de ${y}`
 }
-const fmtDateShort = (iso: string | null | undefined) => {
-  if (!iso) return '—'
-  const [y, m, d] = iso.split('-')
-  return `${d}/${m}/${y}`
-}
-const makeDocId = (iso: string | null | undefined) => {
-  if (!iso) return 'DOC-PTT'
-  const [y, m, d] = iso.split('-')
-  return `DOC-${y}-${m}${d}-PTT`
-}
-const fmtSize = (bytes: number) => {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-}
-const fileExt = (name: string) => name.split('.').pop()?.toUpperCase() || 'ARQ'
+const fmtShort = (iso: string|null|undefined) => { if (!iso) return '—'; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}` }
+const makeDocId = (iso: string|null|undefined) => { if (!iso) return 'DOC-PTT'; const [y,m,d]=iso.split('-'); return `DOC-${y}-${m}${d}-PTT` }
+const fmtSize  = (b: number) => b<1024 ? `${b} B` : b<1048576 ? `${(b/1024).toFixed(0)} KB` : `${(b/1048576).toFixed(1)} MB`
+const fileExt  = (n: string) => n.split('.').pop()?.toUpperCase() || 'ARQ'
 
 // ─── Styles ───────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  // Page bases
-  coverPageStyle:   { fontFamily: 'Inter', fontSize: 10, backgroundColor: C.paper },
-  contentPageStyle: { fontFamily: 'Inter', fontSize: 10, backgroundColor: '#f9f9f7' },
-  closingPageStyle: { fontFamily: 'Inter', fontSize: 10, backgroundColor: C.paper },
+  // ── Page bases ──
+  coverPage:   { fontFamily: 'Inter', fontSize: 10, backgroundColor: C.paper },
+  contentPage: { fontFamily: 'Inter', fontSize: 10, backgroundColor: C.paper },
+  closingPage: { fontFamily: 'Inter', fontSize: 10, backgroundColor: C.paper },
+
+  // ── Full-page background (Recipe 1 & 2) ──
+  fullBg: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' },
 
   // ── Cover ──
-  cover: { flexDirection: 'column', height: '100%', backgroundColor: C.paper, position: 'relative' },
-
+  cover: { flexDirection: 'column', height: '100%', position: 'relative' },
   coverTop: {
     flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between',
-    paddingHorizontal: 52, paddingTop: 40, paddingBottom: 0,
+    paddingHorizontal: 52, paddingTop: 44, paddingBottom: 0, position: 'relative',
   },
-  ninmaLogo: { width: 160, height: 80, objectFit: 'contain' },   // 520x260 = 2:1
-  ninmaLogoPlaceholder: {
-    width: 160, height: 80, backgroundColor: C.purpleSoft,
-    borderRadius: 4, justifyContent: 'center', alignItems: 'center',
-  },
-  ninmaLogoText: { fontSize: 10, fontWeight: 700, color: C.purple },
+  ninmaLogo: { width: 165, height: 83, objectFit: 'contain' },  // 520x260 = 2:1
   chip: {
     fontSize: 7.5, letterSpacing: 1.5, fontWeight: 600, color: C.purple,
     borderWidth: 1.5, borderColor: C.purple, borderRadius: 99,
-    paddingHorizontal: 10, paddingVertical: 5, marginTop: 6,
+    paddingHorizontal: 10, paddingVertical: 5, marginTop: 8,
   },
 
-  coverBody: { flex: 1, paddingHorizontal: 52, justifyContent: 'center' },
-  eyebrow: { fontSize: 8, letterSpacing: 2.2, fontWeight: 700, color: C.coral, marginBottom: 18 },
+  coverBody: { flex: 1, paddingHorizontal: 52, justifyContent: 'center', position: 'relative' },
+  eyebrow: { fontSize: 8.5, letterSpacing: 2.4, fontWeight: 700, color: C.coral, marginBottom: 20 },
   h1: {
-    fontFamily: 'SourceSerif4', fontSize: 38, lineHeight: 1.08, fontWeight: 700,
-    color: C.ink, marginBottom: 16, maxWidth: 440,
+    fontFamily: 'SourceSerif4', fontSize: 42, lineHeight: 1.0, fontWeight: 700,
+    color: C.ink, marginBottom: 16, maxWidth: 460,
   },
   h1Accent: { color: C.purple },
-  coverSub: { fontSize: 12, color: C.inkSoft, marginBottom: 36, lineHeight: 1.5 },
+  coverSub: { fontSize: 13, color: C.inkSoft, marginBottom: 40, lineHeight: 1.5 },
 
   coverFields: {
     flexDirection: 'row', flexWrap: 'wrap',
-    borderWidth: 1, borderColor: C.rule, borderRadius: 10,
+    borderWidth: 1, borderColor: C.rule, borderRadius: 12,
     paddingHorizontal: 28, paddingVertical: 24,
-    backgroundColor: C.paper, maxWidth: 500,
+    backgroundColor: C.paper, maxWidth: 520,
+    gap: 18,
   },
-  coverField:      { width: '50%', marginBottom: 18, paddingRight: 12 },
-  coverFieldLabel: {
-    fontSize: 7.5, letterSpacing: 1.8, fontWeight: 700, color: C.muted,
-    marginBottom: 4,
-  },
-  coverFieldValue: { fontSize: 11, fontWeight: 600, color: C.ink, lineHeight: 1.35 },
-  coverFieldValueList: { fontSize: 10.5, fontWeight: 500, color: C.ink, lineHeight: 1.5 },
+  coverField:     { width: '46%', paddingRight: 8 },
+  coverFieldFull: { width: '100%' },
+  coverFieldLbl:  { fontSize: 8, letterSpacing: 1.8, fontWeight: 700, color: C.muted, marginBottom: 5, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  coverDot:       { width: 4, height: 4, borderRadius: 99 },
+  coverFieldVal:  { fontSize: 11.5, fontWeight: 600, color: C.ink, lineHeight: 1.35 },
+  coverFieldValList: { fontSize: 11, fontWeight: 500, color: C.ink, lineHeight: 1.5 },
 
   coverFoot: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 52, paddingVertical: 18,
-    borderTopWidth: 1, borderTopColor: C.rule,
+    borderTopWidth: 1, borderTopColor: C.rule, position: 'relative',
   },
-  coverFootText: { fontSize: 7.5, letterSpacing: 1, color: C.muted },
+  coverFootText: { fontSize: 8, letterSpacing: 1, color: C.muted },
   dotBar: { flexDirection: 'row', gap: 4, alignItems: 'center' },
-  dot: { width: 5, height: 5, borderRadius: 99 },
+  dot: { width: 6, height: 6, borderRadius: 99 },
 
-  // ── Content page chrome ──
+  // ── Content page ──
   pg: {
     flexDirection: 'column', height: '100%',
-    paddingHorizontal: 48, paddingTop: 44, paddingBottom: 48,
+    paddingHorizontal: 52, paddingTop: 44, paddingBottom: 48,
     backgroundColor: C.paper,
   },
   head: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: C.rule,
-    marginBottom: 26,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.rule,
+    marginBottom: 28,
   },
-  headLogo:    { width: 72, height: 36, objectFit: 'contain' },   // 2:1 ratio
-  headLogoPlaceholder: {
-    width: 72, height: 36, backgroundColor: C.purpleSoft,
-    borderRadius: 3, justifyContent: 'center', alignItems: 'center',
-  },
-  headLogoText: { fontSize: 7, fontWeight: 700, color: C.purple },
+  headLogo: { width: 74, height: 37, objectFit: 'contain' },  // 2:1
   headSection: {
-    flex: 1, textAlign: 'center', fontSize: 7.5, letterSpacing: 1.8,
+    flex: 1, textAlign: 'center', fontSize: 8, letterSpacing: 1.8,
     color: C.muted, fontWeight: 600,
   },
-  headPurple:  { color: C.purple },
-  headDocId:   { fontSize: 7.5, color: C.muted },
+  headPurple: { color: C.purple },
+  headDocId:  { fontSize: 7.5, color: C.muted },
 
   spacer: { flex: 1 },
   foot: {
-    paddingTop: 12,
-    borderTopWidth: 1, borderTopColor: C.rule,
+    paddingTop: 14, borderTopWidth: 1, borderTopColor: C.rule,
     flexDirection: 'row', alignItems: 'center',
   },
-  footLeft:    { flex: 1, fontSize: 7.5, color: C.muted },
-  footPageWrap:{ alignItems: 'center' },
-  footPage:    { fontWeight: 700, fontSize: 9, color: C.purple },
-  footTotal:   { fontSize: 9, color: C.muted },
-  footRight:   { flex: 1, textAlign: 'right', fontSize: 7.5, color: C.muted },
+  footLeft:     { flex: 1, fontSize: 7.5, color: C.muted },
+  footPageWrap: { alignItems: 'center' },
+  footPage:     { fontWeight: 700, fontSize: 9.5, color: C.purple },
+  footTotal:    { fontSize: 9.5, color: C.muted },
+  footRight:    { flex: 1, textAlign: 'right', fontSize: 7.5, color: C.muted },
 
   // ── Section title ──
   secTitle: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    marginBottom: 20, paddingBottom: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    marginBottom: 24, paddingBottom: 12,
     borderBottomWidth: 2, borderBottomColor: C.purple,
   },
   badge: {
     fontSize: 7.5, letterSpacing: 1.2, fontWeight: 700, color: C.purple,
     backgroundColor: C.purpleSoft, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 4,
   },
-  secH2: {
-    fontFamily: 'SourceSerif4', fontSize: 16, fontWeight: 700,
-    color: C.ink,
-  },
+  secH2: { fontFamily: 'SourceSerif4', fontSize: 17, fontWeight: 700, color: C.ink },
 
   // ── Fields ──
-  fields: { gap: 13 },
-  field: { flexDirection: 'row', gap: 10 },
-  fieldSub: { flexDirection: 'row', gap: 10 },
-
+  fields: { gap: 14 },
+  field:    { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  fieldSub: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   fieldNBox: {
-    width: 28, height: 28, backgroundColor: C.purpleSoft, borderRadius: 6,
+    width: 30, height: 30, backgroundColor: C.purpleSoft, borderRadius: 7,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
-  fieldNText: { fontSize: 9.5, fontWeight: 700, color: C.purple },
-  fieldSubArrow: {
-    width: 28, height: 28, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-  },
-  fieldSubArrowText: { fontSize: 11, color: C.muted },
+  fieldNText:    { fontSize: 9.5, fontWeight: 700, color: C.purple },
+  fieldSubArrow: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  fieldSubArrowText: { fontSize: 12, color: C.muted },
+  fieldBody:     { flex: 1 },
+  fieldLabel:    { fontSize: 8, fontWeight: 700, letterSpacing: 0.8, color: C.muted, marginBottom: 3 },
+  fieldSubLabel: { fontSize: 9.5, fontStyle: 'italic', fontWeight: 500, color: C.inkSoft, marginBottom: 3 },
+  fieldValue:    { fontSize: 11, lineHeight: 1.6, color: C.ink },
+  fieldEmpty:    { fontSize: 11, lineHeight: 1.6, color: C.muted, fontStyle: 'italic' },
+  fieldListItem: { fontSize: 11, lineHeight: 1.6, color: C.ink, marginBottom: 1 },
 
-  fieldBody:     { flex: 1, paddingBottom: 2 },
-  fieldLabel: {
-    fontSize: 8, fontWeight: 700, letterSpacing: 0.8, color: C.muted,
-    marginBottom: 3,
-  },
-  fieldSubLabel: {
-    fontSize: 9.5, fontStyle: 'italic', fontWeight: 500,
-    color: C.inkSoft, marginBottom: 3,
-  },
-  fieldValue:    { fontSize: 10.5, lineHeight: 1.55, color: C.ink },
-  fieldEmpty:    { fontSize: 10.5, lineHeight: 1.55, color: C.muted, fontStyle: 'italic' },
-  fieldListItem: { fontSize: 10.5, lineHeight: 1.6, color: C.ink, marginBottom: 1 },
-
-  // ── Impact page ──
-  impactGrid:      { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  // ── Impact ──
+  impactGrid: { flexDirection: 'row', gap: 8, marginBottom: 14 },
   impactCard: {
-    flex: 1, borderWidth: 1, borderColor: C.rule, borderRadius: 8,
-    paddingHorizontal: 10, paddingVertical: 11,
-    backgroundColor: C.paper,
+    flex: 1, borderWidth: 1, borderColor: C.rule, borderRadius: 9,
+    paddingHorizontal: 10, paddingVertical: 11, backgroundColor: C.paper,
   },
-  impactCardAccentBar: {
-    height: 3, borderRadius: 2, marginBottom: 8,
-  },
-  impactCardN:   { fontSize: 7.5, color: C.muted, marginBottom: 5 },
-  impactCardLbl: {
-    fontSize: 7, letterSpacing: 1.2, color: C.muted, fontWeight: 700,
-    marginBottom: 6, lineHeight: 1.3,
-  },
-  impactCardVal: { fontSize: 11.5, fontWeight: 700, color: C.ink, lineHeight: 1.2 },
+  impactAccentBar: { height: 3, borderRadius: 2, marginBottom: 8 },
+  impactCardN:     { fontSize: 7.5, color: C.muted, marginBottom: 5 },
+  impactCardLbl:   { fontSize: 7, letterSpacing: 1.2, color: C.muted, fontWeight: 700, marginBottom: 7, lineHeight: 1.3 },
+  impactCardVal:   { fontSize: 12, fontWeight: 700, color: C.ink, lineHeight: 1.2 },
   impactDesc: {
     paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: C.purpleSoft, borderRadius: 8,
-    marginBottom: 10,
-    borderLeftWidth: 3, borderLeftColor: C.purple,
+    backgroundColor: C.purpleSoft, borderRadius: 9,
+    marginBottom: 10, borderLeftWidth: 3, borderLeftColor: C.purple,
   },
-  impactDescLbl: { fontSize: 9, fontWeight: 700, color: C.purple, marginBottom: 4, letterSpacing: 0.4 },
-  impactDescVal: { fontSize: 10.5, lineHeight: 1.55, color: C.ink },
+  impactDescLbl: { fontSize: 9, fontWeight: 700, color: C.purple, marginBottom: 5, letterSpacing: 0.4 },
+  impactDescVal: { fontSize: 11, lineHeight: 1.55, color: C.ink },
 
-  // ── Annex page ──
-  annexGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 11 },
+  // ── Annex ──
+  annexGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   annexCard: {
-    width: '47.5%', borderWidth: 1, borderColor: C.rule, borderRadius: 10,
+    width: '47.5%', borderWidth: 1, borderColor: C.rule, borderRadius: 11,
     paddingHorizontal: 12, paddingVertical: 12,
     flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: C.paper,
   },
-  annexThumb: {
-    width: 48, height: 48, borderRadius: 7, alignItems: 'center',
-    justifyContent: 'center', flexShrink: 0,
-    backgroundColor: C.coralSoft,
-  },
-  annexThumbAlt: { backgroundColor: C.tealSoft },
-  annexThumbText: { fontSize: 8.5, fontWeight: 700, color: C.coral, letterSpacing: 0.5 },
+  annexThumb:      { width: 52, height: 52, borderRadius: 8, alignItems: 'center', justifyContent: 'center', flexShrink: 0, backgroundColor: C.coralSoft },
+  annexThumbAlt:   { backgroundColor: C.tealSoft },
+  annexThumbText:  { fontSize: 9, fontWeight: 700, color: C.coral, letterSpacing: 0.5 },
   annexThumbTextAlt: { color: C.teal },
-  annexCardBody: { flex: 1 },
-  annexName: { fontSize: 10.5, fontWeight: 600, color: C.ink, lineHeight: 1.3 },
-  annexMeta: { fontSize: 8, color: C.muted, marginTop: 3 },
+  annexCardBody:   { flex: 1 },
+  annexName:       { fontSize: 10.5, fontWeight: 600, color: C.ink, lineHeight: 1.3 },
+  annexMeta:       { fontSize: 8, color: C.muted, marginTop: 3 },
 
-  // ── Closing page ──
-  closing: { flexDirection: 'column', height: '100%', backgroundColor: C.paper, position: 'relative' },
+  // ── Closing ──
+  closing: { flexDirection: 'column', height: '100%', position: 'relative' },
   closingBody: {
-    flex: 1, paddingHorizontal: 66, paddingTop: 64, paddingBottom: 32,
-    alignItems: 'center',
+    flex: 1, paddingHorizontal: 66, paddingTop: 72, paddingBottom: 32,
+    alignItems: 'center', position: 'relative',
   },
-  ppgsmiLogoWrap: { marginBottom: 32, alignItems: 'center' },
-  ppgsmiLogo:     { width: 130, height: 175 },
-  ppgsmiLogoPlaceholder: {
-    width: 130, height: 60, backgroundColor: C.roseSoft,
-    borderRadius: 8, justifyContent: 'center', alignItems: 'center',
-    marginBottom: 32,
-  },
-  ppgsmiLogoPlaceholderText: { fontSize: 12, fontWeight: 700, color: C.rose },
+  ppgsmiLogoWrap: { marginBottom: 36, alignItems: 'center' },
+  ppgsmiLogo:     { width: 140, height: 189, objectFit: 'contain' },  // 518x698 = 0.742 → 140x189
 
-  quoteWrap:  { maxWidth: 430, marginBottom: 36, alignItems: 'center' },
+  quoteWrap: { maxWidth: 440, marginBottom: 40, position: 'relative' },
   quoteMark: {
-    fontFamily: 'SourceSerif4', fontSize: 72, lineHeight: 0.8,
-    color: C.rose, fontWeight: 700, marginBottom: 4, alignSelf: 'flex-start',
+    position: 'absolute', top: -20, left: -30,
+    fontFamily: 'SourceSerif4', fontSize: 100, lineHeight: 0.85,
+    color: C.rose, fontWeight: 700, opacity: 0.4,
   },
   quoteText: {
-    fontFamily: 'SourceSerif4', fontSize: 14, lineHeight: 1.5,
+    fontFamily: 'SourceSerif4', fontSize: 15, lineHeight: 1.45,
     color: C.ink, fontStyle: 'italic', fontWeight: 400, textAlign: 'center',
   },
 
-  creditsWrap: { marginBottom: 32, maxWidth: 400, alignItems: 'center' },
-  crLabel: {
-    fontSize: 8, letterSpacing: 2, color: C.muted, fontWeight: 600,
-    marginBottom: 8, textAlign: 'center',
-  },
-  crName: {
-    fontSize: 14, fontWeight: 700, color: C.rose, textAlign: 'center',
-    marginBottom: 4, lineHeight: 1.25,
-  },
-  crSub: { fontSize: 10, color: C.inkSoft, textAlign: 'center' },
+  creditsWrap: { marginBottom: 36, maxWidth: 460, alignItems: 'center' },
+  crLabel: { fontSize: 8, letterSpacing: 2.2, color: C.muted, fontWeight: 600, marginBottom: 10, textAlign: 'center' },
+  crName:  { fontSize: 15, fontWeight: 700, color: C.rose, textAlign: 'center', marginBottom: 4, lineHeight: 1.25 },
+  crSub:   { fontSize: 11, color: C.inkSoft, textAlign: 'center', letterSpacing: 0.4 },
 
-  sealWrap: { flexDirection: 'row', alignItems: 'center', gap: 12, maxWidth: 340, width: '100%', marginBottom: 28 },
-  sealLine: { flex: 1, height: 1, backgroundColor: C.rule },
-  sealText: {
-    fontSize: 7.5, letterSpacing: 1.5, color: C.inkSoft, fontWeight: 600,
-    textAlign: 'center', lineHeight: 1.6,
-  },
+  sealWrap: { flexDirection: 'row', alignItems: 'center', gap: 12, maxWidth: 380, width: '100%', marginBottom: 28 },
+  sealText: { fontSize: 8, letterSpacing: 1.8, color: C.inkSoft, fontWeight: 600, textAlign: 'center', lineHeight: 1.6 },
 
   toolsRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    paddingHorizontal: 16, paddingVertical: 8,
-    backgroundColor: C.paper,
-    borderWidth: 1, borderColor: C.rule, borderRadius: 99,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingHorizontal: 18, paddingVertical: 10,
+    backgroundColor: C.paper, borderWidth: 1, borderColor: C.rule, borderRadius: 99,
   },
   toolsLabel: { fontSize: 7.5, letterSpacing: 1.5, color: C.muted, fontWeight: 600 },
-  toolLogo:   { width: 60, height: 30, objectFit: 'contain' },   // 2:1 ratio
+  toolLogo:   { width: 64, height: 32, objectFit: 'contain' },  // 2:1
 
   closingFoot: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 52, paddingVertical: 18,
     borderTopWidth: 1, borderTopColor: C.rule,
+    position: 'relative',
   },
   closingFootText: { fontSize: 8, color: C.muted },
 })
 
-// ─── Arc SVG (cover + closing) ────────────────────────────────────────────
-function CoverArc() {
-  const dots = Array.from({ length: 36 }).map((_, i) => {
-    const t = i / 35
-    const angle = Math.PI * (0.15 + t * 0.85)
-    const cx = 260, cy = 260, r = 220
-    const x = cx + r * Math.cos(angle + Math.PI)
-    const y = cy + r * Math.sin(angle + Math.PI)
-    const color = t < 0.35 ? '#6BB49D' : t < 0.85 ? '#E89A5C' : '#D43E5C'
-    const size = 3 + t * 4
-    return { x, y, color, size, key: i }
-  })
+// ─── Recipe 5 — Seal line with SVG LinearGradient ─────────────────────────
+function SealLine({ width = 130 }: { width?: number }) {
   return (
-    <Svg viewBox="0 0 520 520"
-      style={{ position: 'absolute', top: 100, right: -60, width: 380, height: 380 }}>
-      {dots.map(d => (
-        <Circle key={d.key} cx={d.x} cy={d.y} r={d.size} fill={d.color} />
-      ))}
-    </Svg>
-  )
-}
-
-function ClosingArc() {
-  const dots = Array.from({ length: 40 }).map((_, i) => {
-    const t = i / 39
-    const angle = Math.PI * (0.1 + t * 1.0)
-    const cx = 300, cy = 300, r = 260
-    const x = cx + r * Math.cos(angle + Math.PI)
-    const y = cy + r * Math.sin(angle + Math.PI)
-    const color = t < 0.25 ? '#6BB49D' : t < 0.55 ? '#D43E5C' : t < 0.8 ? '#6B5EA0' : '#E89A5C'
-    const size = 3 + t * 4
-    return { x, y, color, size, key: i }
-  })
-  return (
-    <Svg viewBox="0 0 600 600"
-      style={{ position: 'absolute', top: 80, left: 60, width: 480, height: 480 }}>
-      {dots.map(d => (
-        <Circle key={d.key} cx={d.x} cy={d.y} r={d.size} fill={d.color} />
-      ))}
+    <Svg width={width} height={2} viewBox={`0 0 ${width} 2`}>
+      <Defs>
+        <LinearGradient id="sg" x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0%"   stopColor={C.rose} stopOpacity="0" />
+          <Stop offset="50%"  stopColor={C.rose} stopOpacity="1" />
+          <Stop offset="100%" stopColor={C.rose} stopOpacity="0" />
+        </LinearGradient>
+      </Defs>
+      <Rect x="0" y="0" width={width} height="2" fill="url(#sg)" />
     </Svg>
   )
 }
 
 // ─── Shared chrome ────────────────────────────────────────────────────────
-interface Images { ninma: string | null; ppgsmi: string | null }
+interface Images {
+  ninma: string | null
+  ppgsmi: string | null
+  coverBg: string | null
+  closingBg: string | null
+  arcCover: string | null
+  arcClosing: string | null
+}
 
 function Head({ section, docId, images }: { section: string; docId: string; images: Images }) {
   return (
     <View style={s.head}>
       {images.ninma
         ? <Image src={images.ninma} style={s.headLogo} />
-        : (
-          <View style={s.headLogoPlaceholder}>
-            <Text style={s.headLogoText}>NinMaHub</Text>
-          </View>
-        )
+        : <Text style={{ fontSize: 9, fontWeight: 700, color: C.purple, width: 74 }}>NinMaHub</Text>
       }
       <Text style={s.headSection}>
         <Text style={s.headPurple}>· </Text>{section.toUpperCase()}
@@ -444,8 +351,8 @@ function Foot({ page, total, date }: { page: number; total: number; date: string
       <Text style={s.footLeft}>NinMaHub · PPGSMI · UFN</Text>
       <View style={s.footPageWrap}>
         <Text style={s.footPage}>
-          {String(page).padStart(2, '0')}
-          <Text style={s.footTotal}> / {String(total).padStart(2, '0')}</Text>
+          {String(page).padStart(2,'0')}
+          <Text style={s.footTotal}> / {String(total).padStart(2,'0')}</Text>
         </Text>
       </View>
       <Text style={s.footRight}>{date}</Text>
@@ -454,170 +361,150 @@ function Foot({ page, total, date }: { page: number; total: number; date: string
 }
 
 // ─── Field component ──────────────────────────────────────────────────────
-interface FieldItem {
-  n: number
-  label: string
-  value: string | string[]
-  sub?: boolean
-  list?: boolean
-}
+interface FieldItem { n: number; label: string; value: string|string[]; sub?: boolean; list?: boolean }
 
 function Field({ item }: { item: FieldItem }) {
-  const isEmpty = !item.value || item.value === '—' ||
-    (Array.isArray(item.value) && item.value.length === 0)
-  if (item.sub) {
-    return (
-      <View style={s.fieldSub}>
-        <View style={s.fieldSubArrow}>
-          <Text style={s.fieldSubArrowText}>↳</Text>
-        </View>
-        <View style={s.fieldBody}>
-          <Text style={s.fieldSubLabel}>{item.label}</Text>
-          <Text style={isEmpty ? s.fieldEmpty : s.fieldValue}>
-            {isEmpty ? '—' : String(item.value)}
-          </Text>
-        </View>
+  const empty = !item.value || item.value === '—' || (Array.isArray(item.value) && item.value.length === 0)
+  if (item.sub) return (
+    <View style={s.fieldSub}>
+      <View style={s.fieldSubArrow}><Text style={s.fieldSubArrowText}>↳</Text></View>
+      <View style={s.fieldBody}>
+        <Text style={s.fieldSubLabel}>{item.label}</Text>
+        <Text style={empty ? s.fieldEmpty : s.fieldValue}>{empty ? '—' : String(item.value)}</Text>
       </View>
-    )
-  }
+    </View>
+  )
   return (
     <View style={s.field}>
-      <View style={s.fieldNBox}>
-        <Text style={s.fieldNText}>{String(item.n).padStart(2, '0')}</Text>
-      </View>
+      <View style={s.fieldNBox}><Text style={s.fieldNText}>{String(item.n).padStart(2,'0')}</Text></View>
       <View style={s.fieldBody}>
         <Text style={s.fieldLabel}>{item.label.toUpperCase()}</Text>
-        {item.list && Array.isArray(item.value) ? (
-          <View>
-            {item.value.map((v, i) => (
-              <Text key={i} style={s.fieldListItem}>• {v}</Text>
-            ))}
-          </View>
-        ) : (
-          <Text style={isEmpty ? s.fieldEmpty : s.fieldValue}>
-            {isEmpty ? '—' : String(item.value)}
-          </Text>
-        )}
+        {item.list && Array.isArray(item.value)
+          ? <View>{item.value.map((v,i) => <Text key={i} style={s.fieldListItem}>• {v}</Text>)}</View>
+          : <Text style={empty ? s.fieldEmpty : s.fieldValue}>{empty ? '—' : String(item.value)}</Text>
+        }
       </View>
     </View>
   )
 }
 
-// ─── Data mapping (Template → Layout D format) ────────────────────────────
+// ─── Data mapping ─────────────────────────────────────────────────────────
 interface DocData {
-  meta:    { date: string; docId: string; dateShort: string; year: string }
-  cover:   { aluno: string; orientador: string; banca: string[]; data: string }
-  prodP1:  FieldItem[]
-  prodP2:  FieldItem[]
-  impact:  { cards: FieldItem[]; descs: FieldItem[] }
-  charP1:  FieldItem[]
-  charP2:  FieldItem[]
+  meta:   { date: string; docId: string; dateShort: string; year: string }
+  cover:  { aluno: string; orientador: string; banca: string[]; data: string }
+  prodP1: FieldItem[]; prodP2: FieldItem[]
+  impact: { cards: FieldItem[]; descs: FieldItem[] }
+  charP1: FieldItem[]; charP2: FieldItem[]
   annexes: { name: string; ext: string; meta: string; isEven: boolean }[]
 }
 
 function buildDocData(template: Template, attachments: Attachment[]): DocData {
-  const areas   = parseJSON(template.impactoArea).map(k => areaLabels[k] || k)
+  const areas   = parseJSON(template.impactoArea).map(k => areaLabels[k]||k)
   const setores = parseJSON(template.setorBeneficiado)
   const isoDate = template.data || new Date().toISOString().split('T')[0]
 
   const prodFields: FieldItem[] = [
-    { n: 1, label: 'Título do Produto (Português)', value: val(template.tituloPt) },
-    { n: 1, label: 'Título do Produto (Inglês)',    value: val(template.tituloEn), sub: true },
-    { n: 2, label: 'Linha de Pesquisa',             value: look(linhaLabels, template.linhaPesquisa) },
-    { n: 3, label: 'Participação de discente/egresso/docente e participante externo', value: val(template.participantes) },
-    { n: 4, label: 'Objetivo do Produto Técnico-Tecnológico', value: val(template.objetivo) },
-    { n: 5, label: 'Finalidade do Produto Técnico-Tecnológico', value: val(template.finalidade) },
-    { n: 6, label: 'Referencial teórico e metodológico', value: val(template.referencialTeorico) },
-    { n: 7, label: 'Descrição do Produto Técnico-Tecnológico', value: val(template.descricaoProduto) },
-    { n: 8, label: 'Relevância científica, tecnológica, social e de inovação', value: val(template.relevancia) },
-    { n: 9, label: 'Observações', value: val(template.observacoes) },
+    { n:1, label:'Título do Produto (Português)', value: val(template.tituloPt) },
+    { n:1, label:'Título do Produto (Inglês)',    value: val(template.tituloEn), sub:true },
+    { n:2, label:'Linha de Pesquisa',             value: look(linhaLabels, template.linhaPesquisa) },
+    { n:3, label:'Participação de discente/egresso/docente e participante externo', value: val(template.participantes) },
+    { n:4, label:'Objetivo do Produto Técnico-Tecnológico', value: val(template.objetivo) },
+    { n:5, label:'Finalidade do Produto Técnico-Tecnológico', value: val(template.finalidade) },
+    { n:6, label:'Referencial teórico e metodológico', value: val(template.referencialTeorico) },
+    { n:7, label:'Descrição do Produto Técnico-Tecnológico', value: val(template.descricaoProduto) },
+    { n:8, label:'Relevância científica, tecnológica, social e de inovação', value: val(template.relevancia) },
+    { n:9, label:'Observações', value: val(template.observacoes) },
   ]
-  const prodP1 = prodFields.filter(f => f.n <= 5)
-  const prodP2 = prodFields.filter(f => f.n >= 6 && f.n <= 9)
 
   const impactCards: FieldItem[] = [
-    { n: 10, label: 'Nível',          value: look(nivelLabels,    template.impactoNivel) },
-    { n: 11, label: 'Demanda',        value: look(demandaLabels,  template.impactoDemanda) },
-    { n: 12, label: 'Objetivo',       value: look(objetivoLabels, template.impactoObjetivo) },
-    { n: 13, label: 'Área Impactada', value: areas.length > 0 ? areas.join(', ') : '—' },
-    { n: 14, label: 'Tipo',           value: look(tipoLabels,     template.impactoTipo) },
+    { n:10, label:'Nível',          value: look(nivelLabels,    template.impactoNivel) },
+    { n:11, label:'Demanda',        value: look(demandaLabels,  template.impactoDemanda) },
+    { n:12, label:'Objetivo',       value: look(objetivoLabels, template.impactoObjetivo) },
+    { n:13, label:'Área Impactada', value: areas.length ? areas.join(', ') : '—' },
+    { n:14, label:'Tipo',           value: look(tipoLabels,     template.impactoTipo) },
   ]
   const impactDescs: FieldItem[] = template.impactoTipoDesc
-    ? [{ n: 14, label: 'Descrição do Tipo de Impacto', value: val(template.impactoTipoDesc), sub: true }]
+    ? [{ n:14, label:'Descrição do Tipo de Impacto', value: val(template.impactoTipoDesc), sub:true }]
     : []
 
   const charP1: FieldItem[] = [
-    { n: 15, label: 'Replicabilidade',         value: look(boolLabels,    template.replicabilidade) },
-    ...(template.replicabilidadeDesc ? [{ n: 15, label: 'Descrição da Replicabilidade', value: val(template.replicabilidadeDesc), sub: true }] : []),
-    { n: 16, label: 'Abrangência territorial', value: look(abrangLabels,  template.abrangencia) },
-    { n: 17, label: 'Complexidade',            value: look(complexLabels, template.complexidade) },
-    ...(template.complexidadeDesc ? [{ n: 17, label: 'Descrição da Complexidade', value: val(template.complexidadeDesc), sub: true }] : []),
-    { n: 18, label: 'Inovação',                value: look(inovacaoLabels, template.inovacao) },
-    ...(template.inovacaoDesc ? [{ n: 18, label: 'Descrição da Inovação', value: val(template.inovacaoDesc), sub: true }] : []),
-    { n: 19, label: 'Setor da sociedade beneficiado', value: setores.length > 0 ? setores : ['—'], list: setores.length > 0 },
+    { n:15, label:'Replicabilidade',          value: look(boolLabels,    template.replicabilidade) },
+    ...(template.replicabilidadeDesc ? [{ n:15, label:'Descrição da Replicabilidade', value: val(template.replicabilidadeDesc), sub:true }] : []),
+    { n:16, label:'Abrangência territorial',  value: look(abrangLabels,  template.abrangencia) },
+    { n:17, label:'Complexidade',             value: look(complexLabels, template.complexidade) },
+    ...(template.complexidadeDesc ? [{ n:17, label:'Descrição da Complexidade', value: val(template.complexidadeDesc), sub:true }] : []),
+    { n:18, label:'Inovação',                 value: look(inovacaoLabels, template.inovacao) },
+    ...(template.inovacaoDesc ? [{ n:18, label:'Descrição da Inovação', value: val(template.inovacaoDesc), sub:true }] : []),
+    { n:19, label:'Setor da sociedade beneficiado', value: setores.length ? setores : ['—'], list: setores.length > 0 },
   ]
 
   const charP2: FieldItem[] = [
-    { n: 20, label: 'Vínculo com o PDI', value: look(boolLabels, template.vinculoPDI) },
-    { n: 21, label: 'Fomento',           value: look(fomentosLabels, template.fomento) },
-    ...(template.fomentoCodigo ? [{ n: 21, label: 'Código do projeto', value: val(template.fomentoCodigo), sub: true }] : []),
-    { n: 22, label: 'Registro/depósito de propriedade intelectual', value: val(template.propriedadeIntelectual) },
-    { n: 23, label: 'Estágio da tecnologia', value: look({ PILOTO:'Piloto/Protótipo', FINALIZADO:'Finalizado e implantado', TESTE:'Em teste' }, template.estagioTecnologia) },
-    { n: 24, label: 'Transferência de tecnologia/conhecimento', value: look(boolLabels, template.transferenciaConhecimento) },
-    { n: 25, label: 'URL do Produto',  value: val(template.urlProduto) },
-    { n: 26, label: 'Divulgação',      value: val(template.divulgacao) },
+    { n:20, label:'Vínculo com o PDI',  value: look(boolLabels,    template.vinculoPDI) },
+    { n:21, label:'Fomento',            value: look(fomentosLabels, template.fomento) },
+    ...(template.fomentoCodigo ? [{ n:21, label:'Código do projeto', value: val(template.fomentoCodigo), sub:true }] : []),
+    { n:22, label:'Registro/depósito de propriedade intelectual', value: val(template.propriedadeIntelectual) },
+    { n:23, label:'Estágio da tecnologia', value: look({ PILOTO:'Piloto/Protótipo', FINALIZADO:'Finalizado e implantado', TESTE:'Em teste' }, template.estagioTecnologia) },
+    { n:24, label:'Transferência de tecnologia/conhecimento', value: look(boolLabels, template.transferenciaConhecimento) },
+    { n:25, label:'URL do Produto',     value: val(template.urlProduto) },
+    { n:26, label:'Divulgação',         value: val(template.divulgacao) },
   ]
 
-  const annexes = attachments.map((a, i) => ({
+  const annexes = attachments.map((a,i) => ({
     name: a.originalName,
     ext:  fileExt(a.originalName),
-    meta: `${a.mimeType.split('/')[1]?.toUpperCase() || fileExt(a.originalName)} · ${fmtSize(a.size)}`,
-    isEven: i % 2 === 1,
+    meta: `${a.mimeType.split('/')[1]?.toUpperCase()||fileExt(a.originalName)} · ${fmtSize(a.size)}`,
+    isEven: i%2===1,
   }))
 
   const bancaRaw = template.bancaAvaliadora || ''
-  const banca = bancaRaw.trim()
-    ? bancaRaw.split('\n').map(l => l.trim()).filter(Boolean)
-    : ['—']
-
+  const banca = bancaRaw.trim() ? bancaRaw.split('\n').map(l=>l.trim()).filter(Boolean) : ['—']
   const year = isoDate.split('-')[0] || '2026'
 
   return {
-    meta:   { date: fmtDateLong(isoDate), docId: makeDocId(isoDate), dateShort: fmtDateShort(isoDate), year },
+    meta:   { date: fmtLong(isoDate), docId: makeDocId(isoDate), dateShort: fmtShort(isoDate), year },
     cover:  { aluno: val(template.aluno), orientador: val(template.orientador), banca, data: isoDate },
-    prodP1, prodP2,
+    prodP1: prodFields.filter(f=>f.n<=5),
+    prodP2: prodFields.filter(f=>f.n>=6&&f.n<=9),
     impact: { cards: impactCards, descs: impactDescs },
-    charP1, charP2,
-    annexes,
+    charP1, charP2, annexes,
   }
 }
 
 // ─── PDF Document (8 pages) ───────────────────────────────────────────────
+const accentColors = [C.purple, C.coral, C.teal, C.rose, C.purple]
+const dotColors    = [C.coral,  C.teal,  C.purple, C.rose]
+
 function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
   const TOTAL = 8
   const { meta, cover } = doc
-  const accentColors = [C.purple, C.coral, C.teal, C.rose, C.purple]
 
   return (
     <Document title="Produto Técnico-Tecnológico — PPGSMI" author="NinMaHub">
 
       {/* ── 01 CAPA ── */}
-      <Page size="A4" style={s.coverPageStyle}>
+      <Page size="A4" style={s.coverPage}>
         <View style={s.cover}>
-          <CoverArc />
+          {/* Recipe 2: cover background PNG (radial-gradient pre-rendered) */}
+          {images.coverBg && <Image src={images.coverBg} style={s.fullBg} />}
 
+          {/* Recipe 3 Opção B: arc-cover.png (1000x1000, positioned top-right) */}
+          {images.arcCover && (
+            <Image src={images.arcCover} style={{
+              position: 'absolute', top: 140, left: 260,
+              width: 380, height: 380,
+            }} />
+          )}
+
+          {/* Top row */}
           <View style={s.coverTop}>
             {images.ninma
               ? <Image src={images.ninma} style={s.ninmaLogo} />
-              : (
-                <View style={s.ninmaLogoPlaceholder}>
-                  <Text style={s.ninmaLogoText}>NinMaHub</Text>
-                </View>
-              )
+              : <Text style={{ fontSize: 10, fontWeight: 700, color: C.purple }}>NinMaHub</Text>
             }
             <Text style={s.chip}>PRODUTO TÉCNICO-TECNOLÓGICO</Text>
           </View>
 
+          {/* Body */}
           <View style={s.coverBody}>
             <Text style={s.eyebrow}>PPGSMI · DOCUMENTO OFICIAL / {meta.year}</Text>
             <Text style={s.h1}>
@@ -627,33 +514,46 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
             <Text style={s.coverSub}>Universidade Franciscana</Text>
 
             <View style={s.coverFields}>
+              {/* Aluno */}
               <View style={s.coverField}>
-                <Text style={s.coverFieldLabel}>ALUNO</Text>
-                <Text style={s.coverFieldValue}>{cover.aluno}</Text>
+                <View style={s.coverFieldLbl}>
+                  <View style={[s.coverDot, { backgroundColor: C.coral }]} />
+                  <Text>ALUNO</Text>
+                </View>
+                <Text style={s.coverFieldVal}>{cover.aluno}</Text>
               </View>
+              {/* Orientador */}
               <View style={s.coverField}>
-                <Text style={s.coverFieldLabel}>ORIENTADOR</Text>
-                <Text style={s.coverFieldValue}>{cover.orientador}</Text>
+                <View style={s.coverFieldLbl}>
+                  <View style={[s.coverDot, { backgroundColor: C.teal }]} />
+                  <Text>ORIENTADOR</Text>
+                </View>
+                <Text style={s.coverFieldVal}>{cover.orientador}</Text>
               </View>
-              <View style={[s.coverField, { width: '100%', marginBottom: 0 }]}>
-                <Text style={s.coverFieldLabel}>BANCA AVALIADORA</Text>
-                {cover.banca.map((b, i) => (
-                  <Text key={i} style={s.coverFieldValueList}>{b}</Text>
-                ))}
+              {/* Banca */}
+              <View style={s.coverFieldFull}>
+                <View style={s.coverFieldLbl}>
+                  <View style={[s.coverDot, { backgroundColor: C.purple }]} />
+                  <Text>BANCA AVALIADORA</Text>
+                </View>
+                {cover.banca.map((b,i) => <Text key={i} style={s.coverFieldValList}>{b}</Text>)}
               </View>
-              <View style={[s.coverField, { width: '100%', marginBottom: 0, marginTop: 10 }]}>
-                <Text style={s.coverFieldLabel}>DATA DE SUBMISSÃO</Text>
-                <Text style={s.coverFieldValue}>{fmtDateLong(cover.data)}</Text>
+              {/* Data */}
+              <View style={s.coverFieldFull}>
+                <View style={s.coverFieldLbl}>
+                  <View style={[s.coverDot, { backgroundColor: C.rose }]} />
+                  <Text>DATA DE SUBMISSÃO</Text>
+                </View>
+                <Text style={s.coverFieldVal}>{fmtLong(cover.data)}</Text>
               </View>
             </View>
           </View>
 
+          {/* Footer */}
           <View style={s.coverFoot}>
             <Text style={s.coverFootText}> </Text>
             <View style={s.dotBar}>
-              {['#6BB49D','#E89A5C','#D43E5C','#6B5EA0'].map((c, i) => (
-                <View key={i} style={[s.dot, { backgroundColor: c }]} />
-              ))}
+              {dotColors.map((c,i) => <View key={i} style={[s.dot, { backgroundColor: c }]} />)}
             </View>
             <Text style={s.coverFootText}>{meta.docId}</Text>
           </View>
@@ -661,39 +561,35 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
       </Page>
 
       {/* ── 02 PRODUTO P1 (campos 1–5) ── */}
-      <Page size="A4" style={s.contentPageStyle}>
+      <Page size="A4" style={s.contentPage}>
         <View style={s.pg}>
           <Head section="Produto Técnico-Tecnológico" docId={meta.docId} images={images} />
           <View style={s.secTitle}>
             <Text style={s.badge}>SEÇÃO 01 · IDENTIFICAÇÃO</Text>
             <Text style={s.secH2}>Identificação e objetivos do produto</Text>
           </View>
-          <View style={s.fields}>
-            {doc.prodP1.map((item, i) => <Field key={i} item={item} />)}
-          </View>
+          <View style={s.fields}>{doc.prodP1.map((item,i) => <Field key={i} item={item} />)}</View>
           <View style={s.spacer} />
           <Foot page={2} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
 
       {/* ── 03 PRODUTO P2 (campos 6–9) ── */}
-      <Page size="A4" style={s.contentPageStyle}>
+      <Page size="A4" style={s.contentPage}>
         <View style={s.pg}>
           <Head section="Produto Técnico-Tecnológico" docId={meta.docId} images={images} />
           <View style={s.secTitle}>
             <Text style={s.badge}>SEÇÃO 02 · DESCRIÇÃO</Text>
             <Text style={s.secH2}>Fundamentação e descrição do produto</Text>
           </View>
-          <View style={s.fields}>
-            {doc.prodP2.map((item, i) => <Field key={i} item={item} />)}
-          </View>
+          <View style={s.fields}>{doc.prodP2.map((item,i) => <Field key={i} item={item} />)}</View>
           <View style={s.spacer} />
           <Foot page={3} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
 
       {/* ── 04 IMPACTO (campos 10–14) ── */}
-      <Page size="A4" style={s.contentPageStyle}>
+      <Page size="A4" style={s.contentPage}>
         <View style={s.pg}>
           <Head section="Impacto" docId={meta.docId} images={images} />
           <View style={s.secTitle}>
@@ -701,16 +597,16 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
             <Text style={s.secH2}>Análise de impacto do produto</Text>
           </View>
           <View style={s.impactGrid}>
-            {doc.impact.cards.map((card, i) => (
+            {doc.impact.cards.map((card,i) => (
               <View key={i} style={s.impactCard}>
-                <View style={[s.impactCardAccentBar, { backgroundColor: accentColors[i] }]} />
-                <Text style={s.impactCardN}>#{String(card.n).padStart(2, '0')}</Text>
+                <View style={[s.impactAccentBar, { backgroundColor: accentColors[i] }]} />
+                <Text style={s.impactCardN}>#{String(card.n).padStart(2,'0')}</Text>
                 <Text style={s.impactCardLbl}>{card.label.toUpperCase()}</Text>
                 <Text style={s.impactCardVal}>{String(card.value)}</Text>
               </View>
             ))}
           </View>
-          {doc.impact.descs.map((desc, i) => (
+          {doc.impact.descs.map((desc,i) => (
             <View key={i} style={s.impactDesc}>
               <Text style={s.impactDescLbl}>{desc.label}</Text>
               <Text style={s.impactDescVal}>{String(desc.value)}</Text>
@@ -722,84 +618,90 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
       </Page>
 
       {/* ── 05 CARACTERÍSTICAS P1 (campos 15–19) ── */}
-      <Page size="A4" style={s.contentPageStyle}>
+      <Page size="A4" style={s.contentPage}>
         <View style={s.pg}>
           <Head section="Características" docId={meta.docId} images={images} />
           <View style={s.secTitle}>
             <Text style={s.badge}>SEÇÃO 04 · CARACTERÍSTICAS</Text>
             <Text style={s.secH2}>Características operacionais</Text>
           </View>
-          <View style={s.fields}>
-            {doc.charP1.map((item, i) => <Field key={i} item={item} />)}
-          </View>
+          <View style={s.fields}>{doc.charP1.map((item,i) => <Field key={i} item={item} />)}</View>
           <View style={s.spacer} />
           <Foot page={5} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
 
       {/* ── 06 CARACTERÍSTICAS P2 (campos 20–26) ── */}
-      <Page size="A4" style={s.contentPageStyle}>
+      <Page size="A4" style={s.contentPage}>
         <View style={s.pg}>
           <Head section="Características" docId={meta.docId} images={images} />
           <View style={s.secTitle}>
             <Text style={s.badge}>SEÇÃO 05 · VÍNCULOS</Text>
             <Text style={s.secH2}>Vínculos, fomento e divulgação</Text>
           </View>
-          <View style={s.fields}>
-            {doc.charP2.map((item, i) => <Field key={i} item={item} />)}
-          </View>
+          <View style={s.fields}>{doc.charP2.map((item,i) => <Field key={i} item={item} />)}</View>
           <View style={s.spacer} />
           <Foot page={6} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
 
       {/* ── 07 ANEXOS ── */}
-      <Page size="A4" style={s.contentPageStyle}>
+      <Page size="A4" style={s.contentPage}>
         <View style={s.pg}>
           <Head section="Anexos" docId={meta.docId} images={images} />
           <View style={s.secTitle}>
             <Text style={s.badge}>ANEXOS</Text>
             <Text style={s.secH2}>Documentos e arquivos vinculados</Text>
           </View>
-          {doc.annexes.length === 0 ? (
-            <Text style={s.fieldEmpty}>Nenhum arquivo anexado.</Text>
-          ) : (
-            <View style={s.annexGrid}>
-              {doc.annexes.map((a, i) => (
-                <View key={i} style={s.annexCard}>
-                  <View style={[s.annexThumb, a.isEven ? s.annexThumbAlt : {}]}>
-                    <Text style={[s.annexThumbText, a.isEven ? s.annexThumbTextAlt : {}]}>
-                      {a.ext}
-                    </Text>
+          {doc.annexes.length === 0
+            ? <Text style={s.fieldEmpty}>Nenhum arquivo anexado.</Text>
+            : (
+              <View style={s.annexGrid}>
+                {doc.annexes.map((a,i) => (
+                  <View key={i} style={s.annexCard}>
+                    <View style={[s.annexThumb, a.isEven ? s.annexThumbAlt : {}]}>
+                      <Text style={[s.annexThumbText, a.isEven ? s.annexThumbTextAlt : {}]}>{a.ext}</Text>
+                    </View>
+                    <View style={s.annexCardBody}>
+                      <Text style={s.annexName}>{a.name}</Text>
+                      <Text style={s.annexMeta}>{a.meta}</Text>
+                    </View>
                   </View>
-                  <View style={s.annexCardBody}>
-                    <Text style={s.annexName}>{a.name}</Text>
-                    <Text style={s.annexMeta}>{a.meta}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          )}
+                ))}
+              </View>
+            )
+          }
           <View style={s.spacer} />
           <Foot page={7} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
 
       {/* ── 08 ENCERRAMENTO ── */}
-      <Page size="A4" style={s.closingPageStyle}>
+      <Page size="A4" style={s.closingPage}>
         <View style={s.closing}>
-          <ClosingArc />
+          {/* Recipe 1: closing background PNG */}
+          {images.closingBg && <Image src={images.closingBg} style={s.fullBg} />}
+
+          {/* Recipe 3 Opção B: arc-closing.png (1200x1200, centered) */}
+          {images.arcClosing && (
+            <Image src={images.arcClosing} style={{
+              position: 'absolute',
+              top: 160, left: 58,
+              width: 480, height: 480,
+              opacity: 0.55,
+            }} />
+          )}
 
           <View style={s.closingBody}>
-            {images.ppgsmi
-              ? <View style={s.ppgsmiLogoWrap}><Image src={images.ppgsmi} style={s.ppgsmiLogo} /></View>
-              : (
-                <View style={s.ppgsmiLogoPlaceholder}>
-                  <Text style={s.ppgsmiLogoPlaceholderText}>PPGSMI</Text>
-                </View>
-              )
-            }
+            {/* PPGSMI logo */}
+            <View style={s.ppgsmiLogoWrap}>
+              {images.ppgsmi
+                ? <Image src={images.ppgsmi} style={s.ppgsmiLogo} />
+                : <Text style={{ fontSize: 14, fontWeight: 700, color: C.rose }}>PPGSMI</Text>
+              }
+            </View>
 
+            {/* Quote — Recipe 6 */}
             <View style={s.quoteWrap}>
               <Text style={s.quoteMark}>{'"'}</Text>
               <Text style={s.quoteText}>
@@ -807,21 +709,24 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
               </Text>
             </View>
 
+            {/* Credits */}
             <View style={s.creditsWrap}>
               <Text style={s.crLabel}>ESTE DOCUMENTO FOI PRODUZIDO NO ÂMBITO DO</Text>
-              <Text style={s.crName}>Programa de Pós-Graduação em{'\n'}Saúde Materno Infantil</Text>
+              <Text style={s.crName}>{'Programa de Pós-Graduação em\nSaúde Materno Infantil'}</Text>
               <Text style={s.crSub}>Mestrado e Doutorado · Universidade Franciscana</Text>
             </View>
 
+            {/* Seal — Recipe 5 */}
             <View style={s.sealWrap}>
-              <View style={s.sealLine} />
+              <SealLine width={120} />
               <View style={{ alignItems: 'center' }}>
                 <Text style={s.sealText}>Em conformidade com as diretrizes</Text>
                 <Text style={s.sealText}>do PPGSMI · UFN</Text>
               </View>
-              <View style={s.sealLine} />
+              <SealLine width={120} />
             </View>
 
+            {/* "Gerado por" pill — Recipe 4 */}
             <View style={s.toolsRow}>
               <Text style={s.toolsLabel}>GERADO POR</Text>
               {images.ninma
@@ -845,30 +750,27 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
 // ─── Public entry point ───────────────────────────────────────────────────
 export async function generateTemplatePDF(template: Template, attachments: Attachment[] = []) {
   ensureFonts()
-
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
 
-  // Pre-fetch logos as data URLs to avoid runtime fetch issues inside @react-pdf
-  const [ninma, ppgsmi] = await Promise.all([
+  // Pre-fetch all image assets as data URLs
+  const [ninma, ppgsmi, coverBg, closingBg, arcCover, arcClosing] = await Promise.all([
     fetchDataURL(`${origin}/ninmahub-logo.png`),
     fetchDataURL(`${origin}/ppgsmi-logo.png`),
+    fetchDataURL(`${origin}/cover-bg.png`),
+    fetchDataURL(`${origin}/closing-bg.png`),
+    fetchDataURL(`${origin}/arc-cover.png`),
+    fetchDataURL(`${origin}/arc-closing.png`),
   ])
-  const images: Images = { ninma, ppgsmi }
+  const images: Images = { ninma, ppgsmi, coverBg, closingBg, arcCover, arcClosing }
 
   const doc = buildDocData(template, attachments)
-  const element = <LayoutDDocument doc={doc} images={images} />
-  const blob = await pdf(element).toBlob()
+  const blob = await pdf(<LayoutDDocument doc={doc} images={images} />).toBlob()
 
-  const safeName = (template.tituloPt || 'template')
-    .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9_-]/g, '')
-    .slice(0, 50)
-  const filename = `PTT_PPGSMI_${safeName}_${doc.meta.docId}.pdf`
-
+  const safeName = (template.tituloPt||'template').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,50)
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = filename
+  link.download = `PTT_PPGSMI_${safeName}_${doc.meta.docId}.pdf`
   link.click()
   URL.revokeObjectURL(url)
 }
