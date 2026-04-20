@@ -117,7 +117,8 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
       await generateTemplatePDF(template, attachments)
     } catch (e) {
       console.error('PDF error', e)
-      setError('Erro ao gerar PDF')
+      const msg = e instanceof Error ? e.message : String(e)
+      setError(`Erro ao gerar PDF: ${msg.slice(0, 120)}`)
     } finally {
       setGeneratingPDF(false)
     }
