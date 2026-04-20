@@ -137,7 +137,8 @@ const fileExt  = (n: string) => n.split('.').pop()?.toUpperCase() || 'ARQ'
 const s = StyleSheet.create({
   // ── Page bases ──
   coverPage:   { fontFamily: 'Inter', fontSize: 10, backgroundColor: C.paper },
-  contentPage: { fontFamily: 'Inter', fontSize: 10, backgroundColor: C.paper },
+  // paddingTop: 44 (top margin) + paddingBottom: 62 (footer reserve)
+  contentPage: { fontFamily: 'Inter', fontSize: 10, backgroundColor: C.paper, paddingTop: 44, paddingBottom: 62 },
   closingPage: { fontFamily: 'Inter', fontSize: 10, backgroundColor: C.paper },
 
   // ── Full-page background (Recipe 1 & 2) ──
@@ -189,11 +190,13 @@ const s = StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 99 },
 
   // ── Content page ──
-  pg: {
-    flexDirection: 'column', minHeight: '100%',
-    paddingHorizontal: 52, paddingTop: 44, paddingBottom: 48,
-    backgroundColor: C.paper,
-  },
+  // pg is now a plain content wrapper — no fixed height.
+  // Page itself carries paddingTop/Bottom; fixed Head/Foot handle header+footer on every overflow page.
+  pg: { flexDirection: 'column', paddingHorizontal: 52 },
+  // Wrapper for fixed in-flow header (horizontal padding matches pg)
+  headPad: { paddingHorizontal: 52 },
+  // Wrapper for absolutely-positioned fixed footer
+  footAbs: { position: 'absolute', bottom: 20, left: 52, right: 52 },
   head: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.rule,
@@ -207,7 +210,6 @@ const s = StyleSheet.create({
   headPurple: { color: C.purple },
   headDocId:  { fontSize: 7.5, color: C.muted },
 
-  spacer: { flex: 1 },
   foot: {
     paddingTop: 14, borderTopWidth: 1, borderTopColor: C.rule,
     flexDirection: 'row', alignItems: 'center',
@@ -393,6 +395,33 @@ function Head({ section, docId, images }: { section: string; docId: string; imag
       </Text>
       <Text style={s.headDocId}>{docId}</Text>
     </View>
+  )
+}
+
+// Fixed head — repeats at the top of every overflow page (in-flow, not absolute)
+function FixedHead({ section, docId, images }: { section: string; docId: string; images: Images }) {
+  return (
+    <View fixed style={s.headPad}>
+      <Head section={section} docId={docId} images={images} />
+    </View>
+  )
+}
+
+// Fixed foot — absolutely positioned at bottom of every page via render prop
+// Note: @react-pdf v4 render prop only exposes { pageNumber, subPageNumber }; totalPages unavailable
+function FixedFoot({ date }: { date: string }) {
+  return (
+    <View fixed render={({ pageNumber }) => (
+      <View style={s.footAbs}>
+        <View style={s.foot}>
+          <Text style={s.footLeft}>NinMaHub · PPGSMI · UFN</Text>
+          <View style={s.footPageWrap}>
+            <Text style={s.footPage}>{String(pageNumber).padStart(2, '0')}</Text>
+          </View>
+          <Text style={s.footRight}>{date}</Text>
+        </View>
+      </View>
+    )} />
   )
 }
 
@@ -618,36 +647,35 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
 
       {/* ── 02 PRODUTO P1 (campos 1–5) ── */}
       <Page size="A4" style={s.contentPage}>
+        <FixedHead section="Produto Técnico-Tecnológico" docId={meta.docId} images={images} />
+        <FixedFoot date={meta.dateShort} />
         <View style={s.pg}>
-          <Head section="Produto Técnico-Tecnológico" docId={meta.docId} images={images} />
           <View style={s.secTitle}>
             <Text style={s.badge}>SEÇÃO 01 · IDENTIFICAÇÃO</Text>
             <Text style={s.secH2}>Identificação e objetivos do produto</Text>
           </View>
           <View style={s.fields}>{doc.prodP1.map((item,i) => <Field key={i} item={item} />)}</View>
-          <View style={s.spacer} />
-          <Foot page={2} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
 
       {/* ── 03 PRODUTO P2 (campos 6–9) ── */}
       <Page size="A4" style={s.contentPage}>
+        <FixedHead section="Produto Técnico-Tecnológico" docId={meta.docId} images={images} />
+        <FixedFoot date={meta.dateShort} />
         <View style={s.pg}>
-          <Head section="Produto Técnico-Tecnológico" docId={meta.docId} images={images} />
           <View style={s.secTitle}>
             <Text style={s.badge}>SEÇÃO 02 · DESCRIÇÃO</Text>
             <Text style={s.secH2}>Fundamentação e descrição do produto</Text>
           </View>
           <View style={s.fields}>{doc.prodP2.map((item,i) => <Field key={i} item={item} />)}</View>
-          <View style={s.spacer} />
-          <Foot page={3} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
 
       {/* ── 04 IMPACTO (campos 10–14) ── */}
       <Page size="A4" style={s.contentPage}>
+        <FixedHead section="Impacto" docId={meta.docId} images={images} />
+        <FixedFoot date={meta.dateShort} />
         <View style={s.pg}>
-          <Head section="Impacto" docId={meta.docId} images={images} />
           <View style={s.secTitle}>
             <Text style={s.badge}>SEÇÃO 03 · IMPACTO</Text>
             <Text style={s.secH2}>Análise de impacto do produto</Text>
@@ -668,43 +696,40 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
               <Text style={s.impactDescVal}>{String(desc.value)}</Text>
             </View>
           ))}
-          <View style={s.spacer} />
-          <Foot page={4} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
 
       {/* ── 05 CARACTERÍSTICAS P1 (campos 15–19) ── */}
       <Page size="A4" style={s.contentPage}>
+        <FixedHead section="Características" docId={meta.docId} images={images} />
+        <FixedFoot date={meta.dateShort} />
         <View style={s.pg}>
-          <Head section="Características" docId={meta.docId} images={images} />
           <View style={s.secTitle}>
             <Text style={s.badge}>SEÇÃO 04 · CARACTERÍSTICAS</Text>
             <Text style={s.secH2}>Características operacionais</Text>
           </View>
           <View style={s.fields}>{doc.charP1.map((item,i) => <Field key={i} item={item} />)}</View>
-          <View style={s.spacer} />
-          <Foot page={5} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
 
       {/* ── 06 CARACTERÍSTICAS P2 (campos 20–26) ── */}
       <Page size="A4" style={s.contentPage}>
+        <FixedHead section="Características" docId={meta.docId} images={images} />
+        <FixedFoot date={meta.dateShort} />
         <View style={s.pg}>
-          <Head section="Características" docId={meta.docId} images={images} />
           <View style={s.secTitle}>
             <Text style={s.badge}>SEÇÃO 05 · VÍNCULOS</Text>
             <Text style={s.secH2}>Vínculos, fomento e divulgação</Text>
           </View>
           <View style={s.fields}>{doc.charP2.map((item,i) => <Field key={i} item={item} />)}</View>
-          <View style={s.spacer} />
-          <Foot page={6} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
 
       {/* ── 07 ANEXOS ── */}
       <Page size="A4" style={s.contentPage}>
+        <FixedHead section="Anexos" docId={meta.docId} images={images} />
+        <FixedFoot date={meta.dateShort} />
         <View style={s.pg}>
-          <Head section="Anexos" docId={meta.docId} images={images} />
           <View style={s.secTitle}>
             <Text style={s.badge}>ANEXOS</Text>
             <Text style={s.secH2}>Documentos e arquivos vinculados</Text>
@@ -727,8 +752,6 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
               </View>
             )
           }
-          <View style={s.spacer} />
-          <Foot page={7} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
 
