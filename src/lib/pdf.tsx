@@ -282,6 +282,19 @@ const s = StyleSheet.create({
   annexCardBody:   { flex: 1 },
   annexName:       { fontSize: 10.5, fontWeight: 600, color: C.ink, lineHeight: 1.3 },
   annexMeta:       { fontSize: 8, color: C.muted, marginTop: 3 },
+  // Embedded image styles
+  annexImgWrap: {
+    width: '100%', marginBottom: 18,
+    borderWidth: 1, borderColor: C.rule, borderRadius: 11, overflow: 'hidden',
+  },
+  annexImg:     { width: '100%', objectFit: 'contain', maxHeight: 380 },
+  annexImgCap:  {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 12, paddingVertical: 8,
+    borderTopWidth: 1, borderTopColor: C.rule, backgroundColor: C.paper,
+  },
+  annexImgName: { fontSize: 9.5, fontWeight: 600, color: C.ink, flex: 1 },
+  annexImgMeta: { fontSize: 8, color: C.muted },
 
   // ── Closing ──
   closing: { flexDirection: 'column', height: '100%', position: 'relative' },
@@ -480,7 +493,7 @@ interface DocData {
   prodP1: FieldItem[]; prodP2: FieldItem[]
   impact: { cards: FieldItem[]; descs: FieldItem[] }
   charP1: FieldItem[]; charP2: FieldItem[]
-  annexes: { name: string; ext: string; meta: string; isEven: boolean }[]
+  annexes: { name: string; ext: string; meta: string; isEven: boolean; url: string; isImage: boolean; dataUrl: string | null }[]
 }
 
 function buildDocData(template: Template, attachments: Attachment[]): DocData {
@@ -535,10 +548,13 @@ function buildDocData(template: Template, attachments: Attachment[]): DocData {
   ]
 
   const annexes = attachments.map((a,i) => ({
-    name: a.originalName,
-    ext:  fileExt(a.originalName),
-    meta: `${a.mimeType.split('/')[1]?.toUpperCase()||fileExt(a.originalName)} · ${fmtSize(a.size)}`,
-    isEven: i%2===1,
+    name:    a.originalName,
+    ext:     fileExt(a.originalName),
+    meta:    `${a.mimeType.split('/')[1]?.toUpperCase()||fileExt(a.originalName)} · ${fmtSize(a.size)}`,
+    isEven:  i%2===1,
+    url:     a.url,
+    isImage: a.mimeType.startsWith('image/'),
+    dataUrl: null as string | null,
   }))
 
   const bancaRaw = template.bancaAvaliadora || ''
@@ -737,18 +753,33 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
           {doc.annexes.length === 0
             ? <Text style={s.fieldEmpty}>Nenhum arquivo anexado.</Text>
             : (
-              <View style={s.annexGrid}>
-                {doc.annexes.map((a,i) => (
-                  <View key={i} style={s.annexCard}>
-                    <View style={[s.annexThumb, a.isEven ? s.annexThumbAlt : {}]}>
-                      <Text style={[s.annexThumbText, a.isEven ? s.annexThumbTextAlt : {}]}>{a.ext}</Text>
-                    </View>
-                    <View style={s.annexCardBody}>
-                      <Text style={s.annexName}>{a.name}</Text>
-                      <Text style={s.annexMeta}>{a.meta}</Text>
+              <View>
+                {/* Embedded images — full width with caption */}
+                {doc.annexes.filter(a => a.isImage && a.dataUrl).map((a, i) => (
+                  <View key={`img-${i}`} style={s.annexImgWrap}>
+                    <Image src={a.dataUrl!} style={s.annexImg} />
+                    <View style={s.annexImgCap}>
+                      <Text style={s.annexImgName}>{a.name}</Text>
+                      <Text style={s.annexImgMeta}>{a.meta}</Text>
                     </View>
                   </View>
                 ))}
+                {/* Non-image files — metadata cards in 2-column grid */}
+                {doc.annexes.filter(a => !a.isImage || !a.dataUrl).length > 0 && (
+                  <View style={s.annexGrid}>
+                    {doc.annexes.filter(a => !a.isImage || !a.dataUrl).map((a, i) => (
+                      <View key={`file-${i}`} style={s.annexCard}>
+                        <View style={[s.annexThumb, a.isEven ? s.annexThumbAlt : {}]}>
+                          <Text style={[s.annexThumbText, a.isEven ? s.annexThumbTextAlt : {}]}>{a.ext}</Text>
+                        </View>
+                        <View style={s.annexCardBody}>
+                          <Text style={s.annexName}>{a.name}</Text>
+                          <Text style={s.annexMeta}>{a.meta}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
             )
           }
@@ -843,6 +874,13 @@ export async function generateTemplatePDF(template: Template, attachments: Attac
   const images: Images = { ninma, ppgsmi, coverBg, closingBg, arcCover, arcClosing }
 
   const doc = buildDocData(template, attachments)
+
+  // Pre-fetch image attachments as data URLs so they render embedded in the PDF
+  const annexImageDataUrls = await Promise.all(
+    doc.annexes.map(a => a.isImage && a.url ? fetchDataURL(a.url) : Promise.resolve(null))
+  )
+  doc.annexes = doc.annexes.map((a, i) => ({ ...a, dataUrl: annexImageDataUrls[i] }))
+
   const blob = await pdf(<LayoutDDocument doc={doc} images={images} />).toBlob()
 
   const safeName = (template.tituloPt||'template').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,50)
