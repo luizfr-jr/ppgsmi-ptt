@@ -15,9 +15,13 @@ function ensureFonts() {
       family: 'Inter',
       fonts: [
         { src: `${o}/fonts/inter-400.woff2`, fontWeight: 400 },
+        { src: `${o}/fonts/inter-400.woff2`, fontWeight: 400, fontStyle: 'italic' }, // fallback italic
         { src: `${o}/fonts/inter-500.woff2`, fontWeight: 500 },
+        { src: `${o}/fonts/inter-500.woff2`, fontWeight: 500, fontStyle: 'italic' }, // fallback italic
         { src: `${o}/fonts/inter-600.woff2`, fontWeight: 600 },
+        { src: `${o}/fonts/inter-600.woff2`, fontWeight: 600, fontStyle: 'italic' }, // fallback italic
         { src: `${o}/fonts/inter-700.woff2`, fontWeight: 700 },
+        { src: `${o}/fonts/inter-700.woff2`, fontWeight: 700, fontStyle: 'italic' }, // fallback italic
       ],
     })
     Font.register({
