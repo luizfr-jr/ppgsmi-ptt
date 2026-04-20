@@ -680,7 +680,7 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
 
       {/* ── 04 IMPACTO (campos 10–14) ── */}
       <Page size="A4" style={s.contentPage}>
-        <FixedHead section="Impacto" docId={meta.docId} images={images} />
+        <FixedHead section="Produto Técnico-Tecnológico" docId={meta.docId} images={images} />
         <FixedFoot date={meta.dateShort} />
         <View style={s.pg}>
           <View style={s.secTitle}>
@@ -708,7 +708,7 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
 
       {/* ── 05 CARACTERÍSTICAS P1 (campos 15–19) ── */}
       <Page size="A4" style={s.contentPage}>
-        <FixedHead section="Características" docId={meta.docId} images={images} />
+        <FixedHead section="Produto Técnico-Tecnológico" docId={meta.docId} images={images} />
         <FixedFoot date={meta.dateShort} />
         <View style={s.pg}>
           <View style={s.secTitle}>
@@ -721,7 +721,7 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
 
       {/* ── 06 CARACTERÍSTICAS P2 (campos 20–26) ── */}
       <Page size="A4" style={s.contentPage}>
-        <FixedHead section="Características" docId={meta.docId} images={images} />
+        <FixedHead section="Produto Técnico-Tecnológico" docId={meta.docId} images={images} />
         <FixedFoot date={meta.dateShort} />
         <View style={s.pg}>
           <View style={s.secTitle}>
@@ -734,7 +734,7 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
 
       {/* ── 07 ANEXOS ── */}
       <Page size="A4" style={s.contentPage}>
-        <FixedHead section="Anexos" docId={meta.docId} images={images} />
+        <FixedHead section="Produto Técnico-Tecnológico" docId={meta.docId} images={images} />
         <FixedFoot date={meta.dateShort} />
         <View style={s.pg}>
           <View style={s.secTitle}>
