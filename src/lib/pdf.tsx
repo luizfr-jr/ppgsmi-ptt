@@ -14,31 +14,31 @@ function ensureFonts() {
     Font.register({
       family: 'Inter',
       fonts: [
-        { src: `${o}/fonts/inter-400.woff2`, fontWeight: 400 },
-        { src: `${o}/fonts/inter-400.woff2`, fontWeight: 400, fontStyle: 'italic' }, // fallback italic
-        { src: `${o}/fonts/inter-500.woff2`, fontWeight: 500 },
-        { src: `${o}/fonts/inter-500.woff2`, fontWeight: 500, fontStyle: 'italic' }, // fallback italic
-        { src: `${o}/fonts/inter-600.woff2`, fontWeight: 600 },
-        { src: `${o}/fonts/inter-600.woff2`, fontWeight: 600, fontStyle: 'italic' }, // fallback italic
-        { src: `${o}/fonts/inter-700.woff2`, fontWeight: 700 },
-        { src: `${o}/fonts/inter-700.woff2`, fontWeight: 700, fontStyle: 'italic' }, // fallback italic
+        { src: `${o}/fonts/inter-400.ttf`, fontWeight: 400 },
+        { src: `${o}/fonts/inter-400-italic.ttf`, fontWeight: 400, fontStyle: 'italic' },
+        { src: `${o}/fonts/inter-500.ttf`, fontWeight: 500 },
+        { src: `${o}/fonts/inter-500-italic.ttf`, fontWeight: 500, fontStyle: 'italic' },
+        { src: `${o}/fonts/inter-600.ttf`, fontWeight: 600 },
+        { src: `${o}/fonts/inter-600.ttf`, fontWeight: 600, fontStyle: 'italic' }, // no 600 italic — use regular
+        { src: `${o}/fonts/inter-700.ttf`, fontWeight: 700 },
+        { src: `${o}/fonts/inter-700.ttf`, fontWeight: 700, fontStyle: 'italic' }, // no 700 italic — use regular
       ],
     })
     Font.register({
       family: 'SourceSerif4',
       fonts: [
-        { src: `${o}/fonts/sourceserif4-400.woff2`,        fontWeight: 400 },
-        { src: `${o}/fonts/sourceserif4-400-italic.woff2`, fontWeight: 400, fontStyle: 'italic' },
-        { src: `${o}/fonts/sourceserif4-600.woff2`,        fontWeight: 600 },
-        { src: `${o}/fonts/sourceserif4-700.woff2`,        fontWeight: 700 },
+        { src: `${o}/fonts/sourceserif4-400.ttf`,        fontWeight: 400 },
+        { src: `${o}/fonts/sourceserif4-400-italic.ttf`, fontWeight: 400, fontStyle: 'italic' },
+        { src: `${o}/fonts/sourceserif4-600.ttf`,        fontWeight: 600 },
+        { src: `${o}/fonts/sourceserif4-700.ttf`,        fontWeight: 700 },
       ],
     })
     Font.register({
       family: 'JetBrainsMono',
       fonts: [
-        { src: `${o}/fonts/jetbrainsmono-400.woff2`, fontWeight: 400 },
-        { src: `${o}/fonts/jetbrainsmono-600.woff2`, fontWeight: 600 },
-        { src: `${o}/fonts/jetbrainsmono-700.woff2`, fontWeight: 700 },
+        { src: `${o}/fonts/jetbrainsmono-400.ttf`, fontWeight: 400 },
+        { src: `${o}/fonts/jetbrainsmono-600.ttf`, fontWeight: 600 },
+        { src: `${o}/fonts/jetbrainsmono-700.ttf`, fontWeight: 700 },
       ],
     })
     Font.registerHyphenationCallback(w => [w]) // disable hyphenation
