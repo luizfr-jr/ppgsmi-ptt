@@ -7,7 +7,10 @@ type Props = { params: Promise<{ id: string }> }
 
 export default async function TemplatePage({ params }: Props) {
   const session = await getSession()
-  if (!session || session.user.role !== 'ORIENTADOR') redirect('/')
+  if (!session) redirect('/')
+  const role = session.user.role
+  const allowed = role === 'ORIENTADOR' || role === 'COORDENACAO' || role === 'SUPERADMIN'
+  if (!allowed) redirect('/')
 
   const { id } = await params
   const template = await prisma.template.findUnique({
@@ -22,7 +25,11 @@ export default async function TemplatePage({ params }: Props) {
     },
   })
 
-  if (!template || template.advisorId !== session.user.id) notFound()
+  // ORIENTADOR só vê templates em que é o advisor; COORDENACAO e SUPERADMIN veem qualquer um
+  const canView = template && (
+    role !== 'ORIENTADOR' || template.advisorId === session.user.id
+  )
+  if (!canView) notFound()
 
   return <TemplateDetailOrientador user={session.user} template={template as any} />
 }
