@@ -113,8 +113,16 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
   async function handleExportPDF() {
     setGeneratingPDF(true)
     try {
+      // Re-fetch attachments so files uploaded in this session are included
+      let freshAttachments = attachments
+      try {
+        const res = await fetch(`/api/templates/${template.id}/attachments`)
+        const data = await res.json()
+        if (data.success) freshAttachments = data.data
+      } catch { /* keep initial list on network error */ }
+
       const { generateTemplatePDF } = await import('@/lib/pdf')
-      await generateTemplatePDF(template, attachments)
+      await generateTemplatePDF(template, freshAttachments)
     } catch (e) {
       console.error('PDF error', e)
       const msg = e instanceof Error ? e.message : String(e)
