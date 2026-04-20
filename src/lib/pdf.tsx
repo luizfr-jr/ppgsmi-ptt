@@ -146,7 +146,7 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between',
     paddingHorizontal: 52, paddingTop: 40, paddingBottom: 0,
   },
-  ninmaLogo: { width: 160, height: 40 },
+  ninmaLogo: { width: 160, height: 40, objectFit: 'contain' },
   ninmaLogoPlaceholder: {
     width: 160, height: 40, backgroundColor: C.purpleSoft,
     borderRadius: 4, justifyContent: 'center', alignItems: 'center',
@@ -201,7 +201,7 @@ const s = StyleSheet.create({
     paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: C.rule,
     marginBottom: 26,
   },
-  headLogo:    { width: 72, height: 18 },
+  headLogo:    { width: 72, height: 18, objectFit: 'contain' },
   headLogoPlaceholder: {
     width: 72, height: 18, backgroundColor: C.purpleSoft,
     borderRadius: 3, justifyContent: 'center', alignItems: 'center',
@@ -214,11 +214,11 @@ const s = StyleSheet.create({
   headPurple:  { color: C.purple },
   headDocId:   { fontSize: 7.5, color: C.muted },
 
+  spacer: { flex: 1 },
   foot: {
     paddingTop: 12,
     borderTopWidth: 1, borderTopColor: C.rule,
     flexDirection: 'row', alignItems: 'center',
-    marginTop: 12,
   },
   footLeft:    { flex: 1, fontSize: 7.5, color: C.muted },
   footPageWrap:{ alignItems: 'center' },
@@ -671,6 +671,7 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
           <View style={s.fields}>
             {doc.prodP1.map((item, i) => <Field key={i} item={item} />)}
           </View>
+          <View style={s.spacer} />
           <Foot page={2} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
@@ -686,6 +687,7 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
           <View style={s.fields}>
             {doc.prodP2.map((item, i) => <Field key={i} item={item} />)}
           </View>
+          <View style={s.spacer} />
           <Foot page={3} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
@@ -714,6 +716,7 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
               <Text style={s.impactDescVal}>{String(desc.value)}</Text>
             </View>
           ))}
+          <View style={s.spacer} />
           <Foot page={4} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
@@ -729,6 +732,7 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
           <View style={s.fields}>
             {doc.charP1.map((item, i) => <Field key={i} item={item} />)}
           </View>
+          <View style={s.spacer} />
           <Foot page={5} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
@@ -744,6 +748,7 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
           <View style={s.fields}>
             {doc.charP2.map((item, i) => <Field key={i} item={item} />)}
           </View>
+          <View style={s.spacer} />
           <Foot page={6} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
@@ -775,6 +780,7 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
               ))}
             </View>
           )}
+          <View style={s.spacer} />
           <Foot page={7} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
