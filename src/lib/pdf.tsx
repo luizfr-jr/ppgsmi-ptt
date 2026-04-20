@@ -146,9 +146,9 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between',
     paddingHorizontal: 52, paddingTop: 40, paddingBottom: 0,
   },
-  ninmaLogo: { width: 160, height: 40, objectFit: 'contain' },
+  ninmaLogo: { width: 160, height: 80, objectFit: 'contain' },   // 520x260 = 2:1
   ninmaLogoPlaceholder: {
-    width: 160, height: 40, backgroundColor: C.purpleSoft,
+    width: 160, height: 80, backgroundColor: C.purpleSoft,
     borderRadius: 4, justifyContent: 'center', alignItems: 'center',
   },
   ninmaLogoText: { fontSize: 10, fontWeight: 700, color: C.purple },
@@ -201,9 +201,9 @@ const s = StyleSheet.create({
     paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: C.rule,
     marginBottom: 26,
   },
-  headLogo:    { width: 72, height: 18, objectFit: 'contain' },
+  headLogo:    { width: 72, height: 36, objectFit: 'contain' },   // 2:1 ratio
   headLogoPlaceholder: {
-    width: 72, height: 18, backgroundColor: C.purpleSoft,
+    width: 72, height: 36, backgroundColor: C.purpleSoft,
     borderRadius: 3, justifyContent: 'center', alignItems: 'center',
   },
   headLogoText: { fontSize: 7, fontWeight: 700, color: C.purple },
@@ -363,7 +363,7 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: C.rule, borderRadius: 99,
   },
   toolsLabel: { fontSize: 7.5, letterSpacing: 1.5, color: C.muted, fontWeight: 600 },
-  toolLogo:   { width: 60, height: 15 },
+  toolLogo:   { width: 60, height: 30, objectFit: 'contain' },   // 2:1 ratio
 
   closingFoot: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
