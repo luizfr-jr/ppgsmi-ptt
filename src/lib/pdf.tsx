@@ -594,7 +594,7 @@ function buildDocData(template: Template, attachments: Attachment[]): DocData {
 
 // ─── PDF Document (8 pages) ───────────────────────────────────────────────
 function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
-  const TOTAL = 8
+  const TOTAL = 6  // capa e encerramento não são contadas
   const { meta, cover } = doc
   const accentColors = [C.purple, C.coral, C.teal, C.rose, C.purple]
 
@@ -648,15 +648,6 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
             </View>
           </View>
 
-          <View style={s.coverFoot}>
-            <Text style={s.coverFootText}> </Text>
-            <View style={s.dotBar}>
-              {['#6BB49D','#E89A5C','#D43E5C','#6B5EA0'].map((c, i) => (
-                <View key={i} style={[s.dot, { backgroundColor: c }]} />
-              ))}
-            </View>
-            <Text style={s.coverFootText}>{meta.docId}</Text>
-          </View>
         </View>
       </Page>
 
@@ -672,7 +663,7 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
             {doc.prodP1.map((item, i) => <Field key={i} item={item} />)}
           </View>
           <View style={s.spacer} />
-          <Foot page={2} total={TOTAL} date={meta.dateShort} />
+          <Foot page={1} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
 
@@ -688,7 +679,7 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
             {doc.prodP2.map((item, i) => <Field key={i} item={item} />)}
           </View>
           <View style={s.spacer} />
-          <Foot page={3} total={TOTAL} date={meta.dateShort} />
+          <Foot page={2} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
 
@@ -717,7 +708,7 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
             </View>
           ))}
           <View style={s.spacer} />
-          <Foot page={4} total={TOTAL} date={meta.dateShort} />
+          <Foot page={3} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
 
@@ -733,7 +724,7 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
             {doc.charP1.map((item, i) => <Field key={i} item={item} />)}
           </View>
           <View style={s.spacer} />
-          <Foot page={5} total={TOTAL} date={meta.dateShort} />
+          <Foot page={4} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
 
@@ -749,7 +740,7 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
             {doc.charP2.map((item, i) => <Field key={i} item={item} />)}
           </View>
           <View style={s.spacer} />
-          <Foot page={6} total={TOTAL} date={meta.dateShort} />
+          <Foot page={5} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
 
@@ -781,7 +772,7 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
             </View>
           )}
           <View style={s.spacer} />
-          <Foot page={7} total={TOTAL} date={meta.dateShort} />
+          <Foot page={6} total={TOTAL} date={meta.dateShort} />
         </View>
       </Page>
 
