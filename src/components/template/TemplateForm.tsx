@@ -14,6 +14,9 @@ interface TemplateFormProps {
   attachments?: Attachment[]
   readOnly?: boolean
   canChangeStatus?: boolean
+  // Role of the currently logged-in user, used to pick which status
+  // transitions appear in the toolbar. Falls back gracefully if absent.
+  userRole?: 'ALUNO' | 'ORIENTADOR' | 'COORDENACAO' | 'SUPERADMIN'
   onSaved?: (t: Template) => void
 }
 
@@ -44,7 +47,7 @@ function isValidUrl(url: string): boolean {
   try { new URL(url); return true } catch { return false }
 }
 
-export function TemplateForm({ template: initialTemplate, attachments = [], readOnly = false, canChangeStatus = false, onSaved }: TemplateFormProps) {
+export function TemplateForm({ template: initialTemplate, attachments = [], readOnly = false, canChangeStatus = false, userRole, onSaved }: TemplateFormProps) {
   const [template, setTemplate] = useState(initialTemplate)
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState<Date | null>(null)
@@ -134,17 +137,23 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
 
   const statusLabels: Record<string, string> = {
     RASCUNHO: 'Rascunho',
-    ENVIADO: 'Enviado para revisão',
+    ENVIADO: 'Enviado ao orientador',
+    AGUARDANDO_COORDENACAO: 'Aguardando coordenação',
     REVISAO: 'Em revisão',
-    APROVADO: 'Aprovado',
+    APROVADO: 'Aprovado para impressão',
   }
 
   const statusColors: Record<string, string> = {
     RASCUNHO: 'bg-gray-100 text-gray-600',
     ENVIADO: 'bg-ninma-teal-light text-ninma-teal-dark',
+    AGUARDANDO_COORDENACAO: 'bg-ninma-purple-light text-ninma-purple',
     REVISAO: 'bg-ninma-orange-light text-ninma-orange-dark',
     APROVADO: 'bg-green-100 text-green-700',
   }
+
+  const isCoord = userRole === 'COORDENACAO' || userRole === 'SUPERADMIN'
+  const isAdvisor = userRole === 'ORIENTADOR'
+  const isStudent = userRole === 'ALUNO'
 
   return (
     <div className="space-y-6">
@@ -179,16 +188,48 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
 
           {canChangeStatus && (
             <>
-              {template.status === 'RASCUNHO' && (
+              {/* Aluno — envia ao orientador */}
+              {(isStudent || !userRole) && template.status === 'RASCUNHO' && (
                 <button
                   onClick={() => handleStatusChange('ENVIADO')}
                   className="btn-secondary flex items-center gap-2 py-2 px-4 text-sm"
                 >
                   <Send size={15} />
-                  Enviar para revisão
+                  Enviar ao orientador
                 </button>
               )}
-              {template.status === 'ENVIADO' && (
+              {(isStudent || !userRole) && template.status === 'REVISAO' && (
+                <button
+                  onClick={() => handleStatusChange('ENVIADO')}
+                  className="btn-secondary flex items-center gap-2 py-2 px-4 text-sm"
+                >
+                  <Send size={15} />
+                  Reenviar ao orientador
+                </button>
+              )}
+
+              {/* Orientador — aprova para coordenação ou devolve ao aluno */}
+              {isAdvisor && template.status === 'ENVIADO' && (
+                <>
+                  <button
+                    onClick={() => handleStatusChange('REVISAO')}
+                    className="bg-ninma-orange hover:bg-ninma-orange-dark text-white font-medium py-2 px-4 rounded-xl text-sm flex items-center gap-2"
+                  >
+                    <RotateCcw size={15} />
+                    Solicitar revisão
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange('AGUARDANDO_COORDENACAO')}
+                    className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-xl text-sm flex items-center gap-2"
+                  >
+                    <CheckCircle size={15} />
+                    Aprovar e enviar à coordenação
+                  </button>
+                </>
+              )}
+
+              {/* Coordenação — aprova definitivo ou devolve ao aluno */}
+              {isCoord && template.status === 'AGUARDANDO_COORDENACAO' && (
                 <>
                   <button
                     onClick={() => handleStatusChange('REVISAO')}
@@ -202,18 +243,9 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
                     className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-xl text-sm flex items-center gap-2"
                   >
                     <CheckCircle size={15} />
-                    Aprovar
+                    Aprovar para impressão
                   </button>
                 </>
-              )}
-              {template.status === 'REVISAO' && (
-                <button
-                  onClick={() => handleStatusChange('ENVIADO')}
-                  className="btn-secondary flex items-center gap-2 py-2 px-4 text-sm"
-                >
-                  <Send size={15} />
-                  Reenviar
-                </button>
               )}
             </>
           )}

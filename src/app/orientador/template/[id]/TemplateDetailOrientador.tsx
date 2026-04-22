@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Header } from '@/components/layout/Header'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { TemplateForm } from '@/components/template/TemplateForm'
+import { TimelineView } from '@/components/template/TimelineView'
 import { CommentPanel } from '@/components/template/CommentPanel'
 import { PWAInstallPrompt } from '@/components/layout/PWAInstallPrompt'
 import { ArrowLeft, User } from 'lucide-react'
@@ -12,7 +13,7 @@ import { Template, Comment, Attachment } from '@/types'
 
 interface Props {
   user: { id: string; email: string; name: string | null; role: string }
-  template: Template & { comments: Comment[]; attachments: Attachment[]; student: { id: string; name: string | null; email: string } }
+  template: Template & { comments: Comment[]; attachments: Attachment[]; events?: import('@/types').TemplateEvent[]; student: { id: string; name: string | null; email: string } }
 }
 
 export function TemplateDetailOrientador({ user, template: initialTemplate }: Props) {
@@ -40,11 +41,18 @@ export function TemplateDetailOrientador({ user, template: initialTemplate }: Pr
               </div>
             </div>
 
+            <TimelineView
+              currentStatus={template.status}
+              events={initialTemplate.events}
+              className="mb-6"
+            />
+
             <TemplateForm
               template={template}
               attachments={initialTemplate.attachments}
               readOnly={false}
               canChangeStatus={true}
+              userRole={user.role as 'ORIENTADOR' | 'COORDENACAO' | 'SUPERADMIN'}
               onSaved={setTemplate as any}
             />
 

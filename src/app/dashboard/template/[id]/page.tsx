@@ -19,6 +19,7 @@ export default async function TemplatePage({ params }: Props) {
         orderBy: { createdAt: 'desc' },
       },
       attachments: { orderBy: { createdAt: 'asc' } },
+      events: { orderBy: { createdAt: 'asc' } },
     },
   })
 

@@ -1,5 +1,17 @@
 export type UserRole = 'ALUNO' | 'ORIENTADOR' | 'COORDENACAO' | 'SUPERADMIN'
-export type TemplateStatus = 'RASCUNHO' | 'ENVIADO' | 'APROVADO' | 'REVISAO'
+export type TemplateStatus = 'RASCUNHO' | 'ENVIADO' | 'AGUARDANDO_COORDENACAO' | 'APROVADO' | 'REVISAO'
+
+export interface TemplateEvent {
+  id: string
+  templateId: string
+  actorId: string | null
+  actorName: string | null
+  actorRole: string | null
+  fromStatus: string | null
+  toStatus: string
+  note: string | null
+  createdAt: Date | string
+}
 
 export interface User {
   id: string

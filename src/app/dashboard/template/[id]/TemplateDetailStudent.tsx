@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Header } from '@/components/layout/Header'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { TemplateForm } from '@/components/template/TemplateForm'
+import { TimelineView } from '@/components/template/TimelineView'
 import { CommentPanel } from '@/components/template/CommentPanel'
 import { PWAInstallPrompt } from '@/components/layout/PWAInstallPrompt'
 import { SetupModal, needsSetup } from '@/components/layout/SetupModal'
@@ -14,7 +15,7 @@ import { Template, Comment, Attachment } from '@/types'
 
 interface Props {
   user: { id: string; email: string; name: string | null; role: string; advisorId?: string | null; advisor?: { name: string | null; email: string } | null }
-  template: Template & { comments: Comment[]; attachments: Attachment[] }
+  template: Template & { comments: Comment[]; attachments: Attachment[]; events?: import('@/types').TemplateEvent[] }
 }
 
 export function TemplateDetailStudent({ user, template: initialTemplate }: Props) {
@@ -90,12 +91,20 @@ export function TemplateDetailStudent({ user, template: initialTemplate }: Props
               )}
             </div>
 
+            {/* Workflow timeline */}
+            <TimelineView
+              currentStatus={template.status}
+              events={initialTemplate.events}
+              className="mb-6"
+            />
+
             {/* Template form */}
             <TemplateForm
               template={template}
               attachments={initialTemplate.attachments}
               readOnly={!canEdit}
               canChangeStatus={canSubmit}
+              userRole="ALUNO"
               onSaved={setTemplate as any}
             />
 
