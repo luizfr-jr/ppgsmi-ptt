@@ -24,8 +24,10 @@ function logCodeToTerminal(email: string, code: string) {
 }
 
 export async function sendOTPEmail(email: string, code: string) {
+  // Always log the code to Vercel function logs as a backup (safe fallback)
+  logCodeToTerminal(email, code)
+
   if (!emailConfigured) {
-    logCodeToTerminal(email, code)
     return
   }
   const html = `
@@ -80,11 +82,11 @@ export async function sendOTPEmail(email: string, code: string) {
       html,
     })
   } catch (smtpError) {
+    console.error('SMTP falhou (código disponível nos logs acima):', smtpError)
     if (isDev) {
-      console.error('SMTP falhou, usando fallback de terminal:', smtpError)
-      logCodeToTerminal(email, code)
-    } else {
-      throw smtpError
+      // already logged above, just swallow
+      return
     }
+    throw smtpError
   }
 }
