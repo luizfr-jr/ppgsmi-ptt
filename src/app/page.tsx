@@ -24,7 +24,13 @@ export default function LoginPage() {
       const data = await res.json()
       if (data.success) {
         setStep('otp')
-        setMessage('Código enviado! Verifique seu e-mail.')
+        // When SMTP is not configured, the API returns the code in devCode so the
+        // user can see it on-screen without hunting through server logs.
+        if (data.devCode) {
+          setMessage(`Código: ${data.devCode} (SMTP não configurado — código exibido em tela)`)
+        } else {
+          setMessage('Código enviado! Verifique seu e-mail.')
+        }
       } else {
         setError(data.error || 'Erro ao enviar código')
       }
