@@ -32,7 +32,12 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/icons') ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/manifest') ||
-    pathname.startsWith('/debug')
+    pathname.startsWith('/debug') ||
+    pathname === '/icon.svg' ||
+    pathname === '/favicon.ico' ||
+    pathname.endsWith('.png') ||
+    pathname.endsWith('.svg') ||
+    pathname.endsWith('.ico')
   ) {
     return NextResponse.next()
   }
