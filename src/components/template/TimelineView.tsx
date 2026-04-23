@@ -22,11 +22,32 @@ interface TimelineViewProps {
 
 type StepKey = 'RASCUNHO' | 'ENVIADO' | 'AGUARDANDO_COORDENACAO' | 'APROVADO'
 
-const STEPS: { key: StepKey; label: string; sub: string; Icon: typeof FileEdit }[] = [
-  { key: 'RASCUNHO',               label: 'Rascunho',    sub: 'Aluno preenchendo',       Icon: FileEdit },
-  { key: 'ENVIADO',                label: 'Em revisão',  sub: 'Orientador avaliando',    Icon: Send },
-  { key: 'AGUARDANDO_COORDENACAO', label: 'Coordenação', sub: 'Avaliação final',         Icon: Building2 },
-  { key: 'APROVADO',               label: 'Aprovado',    sub: 'Liberado para impressão', Icon: Printer },
+// Each step shows a different caption depending on whether it's already done,
+// currently active, or still pending — so the text always reflects real state.
+interface StepDef {
+  key: StepKey
+  label: string
+  Icon: typeof FileEdit
+  sub: { completed: string; current: string; pending: string }
+}
+
+const STEPS: StepDef[] = [
+  {
+    key: 'RASCUNHO', label: 'Rascunho', Icon: FileEdit,
+    sub: { completed: 'Aluno preencheu',  current: 'Aluno preenchendo',  pending: 'Aluno preencherá' },
+  },
+  {
+    key: 'ENVIADO', label: 'Em revisão', Icon: Send,
+    sub: { completed: 'Orientador avaliou', current: 'Orientador avaliando', pending: 'Aguardando envio ao orientador' },
+  },
+  {
+    key: 'AGUARDANDO_COORDENACAO', label: 'Coordenação', Icon: Building2,
+    sub: { completed: 'Coordenação aprovou', current: 'Coordenação avaliando', pending: 'Aguardando aprovação do orientador' },
+  },
+  {
+    key: 'APROVADO', label: 'Aprovado', Icon: Printer,
+    sub: { completed: 'Liberado para impressão', current: 'Liberado para impressão', pending: 'Aguardando aprovação' },
+  },
 ]
 
 function activeIndexFor(status: string): number {
@@ -51,19 +72,9 @@ function fmtDate(d: Date | string): string {
   return `${dd}/${mm}/${yy} · ${hh}:${mi}`
 }
 
-function statusSummary(status: string, currentStep: StepKey): string {
-  if (status === 'APROVADO')               return 'Documento aprovado e liberado para impressão'
-  if (status === 'AGUARDANDO_COORDENACAO') return 'Aguardando avaliação da coordenação'
-  if (status === 'ENVIADO')                return 'Aguardando revisão do orientador'
-  if (status === 'REVISAO')                return 'Devolvido ao aluno para ajustes'
-  if (status === 'RASCUNHO')               return 'Em preenchimento pelo aluno'
-  return currentStep
-}
-
 export function TimelineView({ currentStatus, events = [], className = '' }: TimelineViewProps) {
   const activeIdx = activeIndexFor(currentStatus)
   const isRevisao = currentStatus === 'REVISAO'
-  const currentStep = STEPS[activeIdx]
 
   // Last event that transitioned INTO each step
   const lastEventTo = (toStatus: string) => {
@@ -76,33 +87,15 @@ export function TimelineView({ currentStatus, events = [], className = '' }: Tim
 
   return (
     <div className={`card ${className}`}>
-      {/* Header with prominent current-status callout */}
-      <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
-        <div>
-          <h3 className="text-sm font-bold uppercase tracking-wider text-ninma-purple">Linha do tempo</h3>
-          <p className="text-xs text-gray-500 mt-0.5">Acompanhamento do fluxo de aprovação</p>
-        </div>
-        <div className={[
-          'flex items-center gap-2.5 rounded-xl px-4 py-2.5 border-2',
-          isRevisao
-            ? 'bg-ninma-orange-light border-ninma-orange text-ninma-orange-dark'
-            : 'bg-gradient-to-r from-ninma-teal-light to-ninma-purple-light border-ninma-purple text-ninma-purple',
-        ].join(' ')}>
-          <div className="relative flex items-center justify-center">
-            <span className={[
-              'w-2.5 h-2.5 rounded-full',
-              isRevisao ? 'bg-ninma-orange' : 'bg-ninma-purple',
-            ].join(' ')} />
-            <span className={[
-              'absolute w-2.5 h-2.5 rounded-full animate-ping',
-              isRevisao ? 'bg-ninma-orange' : 'bg-ninma-purple',
-            ].join(' ')} />
+      <div className="mb-6">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-ninma-purple">Linha do tempo</h3>
+        <p className="text-xs text-gray-500 mt-0.5">Acompanhamento do fluxo de aprovação</p>
+        {isRevisao && (
+          <div className="mt-3 inline-flex items-center gap-2 bg-ninma-orange-light text-ninma-orange-dark text-xs font-semibold px-3 py-1.5 rounded-full">
+            <RotateCcw size={12} />
+            Documento devolvido ao aluno para ajustes
           </div>
-          <div className="text-left">
-            <div className="text-[10px] font-semibold uppercase tracking-widest opacity-75">Status atual</div>
-            <div className="text-sm font-bold leading-tight">{statusSummary(currentStatus, currentStep.key)}</div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Desktop: horizontal */}
@@ -126,24 +119,19 @@ export function TimelineView({ currentStatus, events = [], className = '' }: Tim
               return (
                 <div key={step.key} className="flex flex-col items-center flex-1 min-w-0 px-1">
                   {/* Marker */}
-                  <div className="relative">
-                    {isCurrent && (
-                      <span className="absolute inset-0 rounded-full bg-ninma-purple opacity-25 animate-ping" />
-                    )}
-                    <div
-                      className={[
-                        'relative rounded-full flex items-center justify-center transition-all z-10',
-                        isCurrent
-                          ? 'w-16 h-16 -mt-1 bg-gradient-to-br from-ninma-teal to-ninma-purple text-white shadow-lg ring-4 ring-ninma-purple/25'
-                          : 'w-12 h-12',
-                        completed && !isCurrent && 'bg-green-50 border-[3px] border-green-500 text-green-600 shadow-sm',
-                        pending && !isCurrent && 'bg-white border-2 border-dashed border-gray-300 text-gray-300',
-                      ].filter(Boolean).join(' ')}
-                    >
-                      {completed ? <CheckCircle2 size={22} /> :
-                        isCurrent ? <Icon size={26} /> :
-                        <Icon size={18} />}
-                    </div>
+                  <div
+                    className={[
+                      'relative rounded-full flex items-center justify-center transition-all',
+                      isCurrent
+                        ? 'w-16 h-16 -mt-1 bg-gradient-to-br from-ninma-teal to-ninma-purple text-white shadow-lg ring-4 ring-ninma-purple/25'
+                        : 'w-12 h-12',
+                      completed && !isCurrent && 'bg-green-50 border-[3px] border-green-500 text-green-600 shadow-sm',
+                      pending && !isCurrent && 'bg-white border-2 border-dashed border-gray-300 text-gray-300',
+                    ].filter(Boolean).join(' ')}
+                  >
+                    {completed ? <CheckCircle2 size={22} /> :
+                      isCurrent ? <Icon size={26} /> :
+                      <Icon size={18} />}
                   </div>
 
                   {/* Label + date */}
@@ -167,7 +155,7 @@ export function TimelineView({ currentStatus, events = [], className = '' }: Tim
                       isCurrent && 'text-ninma-inkSoft font-medium',
                       pending && 'text-gray-300',
                     ].filter(Boolean).join(' ')}>
-                      {step.sub}
+                      {completed ? step.sub.completed : isCurrent ? step.sub.current : step.sub.pending}
                     </div>
                     {ev ? (
                       <div className={[
@@ -224,11 +212,8 @@ export function TimelineView({ currentStatus, events = [], className = '' }: Tim
             return (
               <div key={step.key} className="relative pb-6 last:pb-0">
                 <div className="absolute -left-[35px] top-0">
-                  {isCurrent && (
-                    <span className="absolute inset-0 rounded-full bg-ninma-purple opacity-25 animate-ping w-12 h-12" />
-                  )}
                   <div className={[
-                    'relative rounded-full flex items-center justify-center z-10',
+                    'relative rounded-full flex items-center justify-center',
                     isCurrent
                       ? 'w-12 h-12 bg-gradient-to-br from-ninma-teal to-ninma-purple text-white shadow-lg ring-4 ring-ninma-purple/25'
                       : 'w-10 h-10',
@@ -254,7 +239,9 @@ export function TimelineView({ currentStatus, events = [], className = '' }: Tim
                   ].filter(Boolean).join(' ')}>
                     {step.label}
                   </div>
-                  <div className="text-xs text-gray-500">{step.sub}</div>
+                  <div className="text-xs text-gray-500">
+                    {completed ? step.sub.completed : isCurrent ? step.sub.current : step.sub.pending}
+                  </div>
                   {ev ? (
                     <div className={[
                       'mt-1.5 inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full',
