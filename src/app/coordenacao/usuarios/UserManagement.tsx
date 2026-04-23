@@ -4,7 +4,7 @@ import { useState, ReactNode } from 'react'
 import { Header } from '@/components/layout/Header'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { PWAInstallPrompt } from '@/components/layout/PWAInstallPrompt'
-import { UserCog, UserPlus, Trash2, Pencil, Check, X, Search, Shield, GraduationCap, Users, Star } from 'lucide-react'
+import { UserCog, UserPlus, Trash2, Pencil, Check, X, Search, Shield, GraduationCap, Users, Star, AlertCircle, Bell } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -48,14 +48,33 @@ export function UserManagement({ currentUser, initialUsers }: Props) {
   const [error, setError] = useState('')
 
   const isSuperAdmin = currentUser.role === 'SUPERADMIN'
+  const [showPendingOnly, setShowPendingOnly] = useState(false)
 
-  const filtered = users.filter(u => {
-    const matchSearch = !search ||
-      (u.name || '').toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase())
-    const matchRole = !filterRole || u.role === filterRole
-    return matchSearch && matchRole
-  })
+  // A user "needs review" when they self-signed up: created recently (<14 days),
+  // still on the default ALUNO role, AND has no name set (admins always set a name).
+  const needsReview = (u: UserItem) => {
+    if (u.role !== 'ALUNO' || u.name) return false
+    const ageDays = (Date.now() - new Date(u.createdAt).getTime()) / 86400000
+    return ageDays <= 14
+  }
+  const pendingCount = users.filter(needsReview).length
+
+  const filtered = users
+    .filter(u => {
+      const matchSearch = !search ||
+        (u.name || '').toLowerCase().includes(search.toLowerCase()) ||
+        u.email.toLowerCase().includes(search.toLowerCase())
+      const matchRole = !filterRole || u.role === filterRole
+      const matchPending = !showPendingOnly || needsReview(u)
+      return matchSearch && matchRole && matchPending
+    })
+    // Pending-review users bubble to the top
+    .sort((a, b) => {
+      const ap = needsReview(a) ? 1 : 0
+      const bp = needsReview(b) ? 1 : 0
+      if (ap !== bp) return bp - ap
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    })
 
   function startEdit(u: UserItem) {
     setEditingId(u.id)
@@ -155,6 +174,33 @@ export function UserManagement({ currentUser, initialUsers }: Props) {
                 Novo Usuário
               </button>
             </div>
+
+            {/* Pending-review alert */}
+            {pendingCount > 0 && (
+              <div
+                onClick={() => setShowPendingOnly(v => !v)}
+                className={`card mb-4 cursor-pointer border-2 transition-all ${
+                  showPendingOnly ? 'border-ninma-pink bg-ninma-pink/5' : 'border-ninma-orange bg-ninma-orange-light/40 hover:bg-ninma-orange-light'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-ninma-orange-dark shadow-sm">
+                    <Bell size={18} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm font-bold text-ninma-dark">
+                      {pendingCount} {pendingCount === 1 ? 'novo cadastro aguarda' : 'novos cadastros aguardam'} revisão
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      Usuários que se cadastraram sozinhos — confira o perfil correto (Aluno, Orientador ou Coordenação).
+                    </div>
+                  </div>
+                  <span className="text-xs font-semibold text-ninma-orange-dark">
+                    {showPendingOnly ? 'Mostrar todos' : 'Ver somente pendentes'}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -270,8 +316,14 @@ export function UserManagement({ currentUser, initialUsers }: Props) {
                   const canEdit = isSuperAdmin || (currentUser.role === 'COORDENACAO' && u.role !== 'SUPERADMIN')
                   const canDelete = isSuperAdmin && !isMe
 
+                  const pending = needsReview(u)
                   return (
-                    <div key={u.id} className="card hover:shadow-md transition-shadow">
+                    <div
+                      key={u.id}
+                      className={`card hover:shadow-md transition-shadow ${
+                        pending ? 'border-l-4 border-l-ninma-orange bg-ninma-orange-light/20' : ''
+                      }`}
+                    >
                       {isEditing ? (
                         /* Edit mode */
                         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
@@ -318,6 +370,12 @@ export function UserManagement({ currentUser, initialUsers }: Props) {
                               </span>
                               {isMe && (
                                 <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Você</span>
+                              )}
+                              {pending && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold tracking-widest bg-ninma-orange text-white px-2 py-0.5 rounded uppercase">
+                                  <AlertCircle size={10} />
+                                  Novo · Revisar
+                                </span>
                               )}
                             </div>
                             <div className="font-semibold text-ninma-dark truncate">

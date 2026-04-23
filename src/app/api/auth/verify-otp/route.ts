@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyOTP, getOrCreateUser, createSession } from '@/lib/auth'
+import { prisma } from '@/lib/db'
+import { sendWelcomeEmail, sendNewSignupNotification } from '@/lib/email'
 import { z } from 'zod'
 
 const schema = z.object({
@@ -20,8 +22,36 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Detect first-login (self-signup) so we can fire welcome + admin-notify emails.
+    const existedBefore = await prisma.user.findUnique({ where: { email }, select: { id: true } })
     const user = await getOrCreateUser(email)
     await createSession(user.id, user.email, user.role as any, user.name)
+
+    if (!existedBefore) {
+      // Welcome e-mail to the new user (fire-and-forget, never blocks login)
+      void sendWelcomeEmail({
+        to: user.email,
+        userName: user.name,
+        role: user.role,
+        createdByAdmin: false,
+      })
+      // Notify all super-admins + coordenação that a new account appeared
+      void (async () => {
+        try {
+          const admins = await prisma.user.findMany({
+            where: { role: { in: ['SUPERADMIN', 'COORDENACAO'] } },
+            select: { email: true },
+          })
+          await sendNewSignupNotification({
+            to: admins.map(a => a.email).filter(Boolean),
+            newUserName: user.name,
+            newUserEmail: user.email,
+          })
+        } catch (err) {
+          console.error('[signup] failed to notify admins:', err)
+        }
+      })()
+    }
 
     // Redirect based on role
     const redirectMap: Record<string, string> = {

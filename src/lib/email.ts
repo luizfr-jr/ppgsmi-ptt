@@ -214,3 +214,93 @@ export async function sendTemplateRevisionRequestedEmail(params: {
     }),
   })
 }
+
+// ─── Account lifecycle emails ──────────────────────────────────────────────
+
+const ROLE_LABELS: Record<string, string> = {
+  ALUNO:       'Aluno',
+  ORIENTADOR:  'Orientador',
+  COORDENACAO: 'Coordenação',
+  SUPERADMIN:  'Super Admin',
+}
+
+const ROLE_DESCRIPTIONS: Record<string, string> = {
+  ALUNO:       'Você poderá criar e preencher seus templates de Produto Técnico-Tecnológico, enviando-os ao seu orientador quando estiverem prontos.',
+  ORIENTADOR:  'Você poderá revisar e aprovar os templates dos seus orientandos antes de encaminhá-los à coordenação.',
+  COORDENACAO: 'Você poderá avaliar os templates aprovados pelos orientadores e liberá-los para impressão.',
+  SUPERADMIN:  'Você tem acesso completo ao sistema, incluindo gestão de usuários e supervisão de todos os templates.',
+}
+
+/** Boas-vindas ao novo usuário (criado por admin ou self-signup) */
+export async function sendWelcomeEmail(params: {
+  to: string
+  userName: string | null
+  role: string
+  advisorName?: string | null
+  createdByAdmin?: boolean
+}) {
+  const url = baseUrl()
+  const roleLabel = ROLE_LABELS[params.role] || params.role
+  const roleDesc = ROLE_DESCRIPTIONS[params.role] || ''
+  const greeting = params.userName ? `Olá, ${params.userName},` : 'Olá,'
+
+  const advisorLine = params.role === 'ALUNO' && params.advisorName
+    ? `<p><strong>Orientador vinculado:</strong> ${params.advisorName}</p>`
+    : ''
+
+  const origin = params.createdByAdmin
+    ? '<p>Sua conta foi criada pela coordenação do PPGSMI.</p>'
+    : '<p>Obrigado por se cadastrar no sistema.</p>'
+
+  await sendMail({
+    to: params.to,
+    subject: `Bem-vindo(a) ao NinMaHub — PPGSMI`,
+    html: renderShell({
+      title: 'Sua conta foi criada',
+      intro: `
+        <p>${greeting}</p>
+        ${origin}
+        <p>Você já pode acessar a plataforma <strong>NinMaHub</strong>, o sistema de templates do Programa de Pós-Graduação em Saúde Materno Infantil da Universidade Franciscana.</p>
+        <div style="background:#f0f9f7;border-left:3px solid #5fc3ad;padding:14px 18px;border-radius:6px;margin:18px 0;">
+          <div style="font-size:11px;letter-spacing:1.5px;color:#756fb3;font-weight:700;margin-bottom:4px;">SEU PERFIL</div>
+          <div style="font-size:16px;font-weight:700;color:#1a1f3a;">${roleLabel}</div>
+          <div style="font-size:13px;color:#374151;margin-top:6px;">${roleDesc}</div>
+        </div>
+        ${advisorLine}
+        <p>Para entrar, basta informar seu e-mail (<strong>${params.to}</strong>) e o sistema enviará um código de acesso.</p>
+      `,
+      cta: url, ctaLabel: 'Acessar o sistema',
+      footer: 'Caso você não esperava receber este e-mail, pode ignorá-lo com segurança.',
+    }),
+  })
+}
+
+/** Novo self-signup → notifica superadmins para revisar o perfil */
+export async function sendNewSignupNotification(params: {
+  to: string[]
+  newUserName: string | null
+  newUserEmail: string
+}) {
+  if (params.to.length === 0) return
+  const url = `${baseUrl()}/coordenacao/usuarios`
+  const displayName = params.newUserName || params.newUserEmail
+  await sendMail({
+    to: params.to,
+    subject: `Novo cadastro no sistema: ${displayName}`,
+    html: renderShell({
+      title: 'Novo usuário cadastrado',
+      intro: `
+        <p>Um novo usuário se cadastrou no sistema PPGSMI:</p>
+        <div style="background:#fbe8ee;border-left:3px solid #D43E5C;padding:14px 18px;border-radius:6px;margin:18px 0;">
+          <div style="font-size:15px;font-weight:700;color:#1a1f3a;">${displayName}</div>
+          <div style="font-size:13px;color:#6b7280;margin-top:2px;">${params.newUserEmail}</div>
+          <div style="font-size:12px;color:#D43E5C;margin-top:10px;font-weight:600;">
+            ⚠ Perfil padrão: ALUNO — revise se precisar ajustar para Orientador ou Coordenação.
+          </div>
+        </div>
+        <p>Acesse a Gestão de Usuários para revisar e, se necessário, alterar o perfil, vincular a um orientador ou remover.</p>
+      `,
+      cta: url, ctaLabel: 'Abrir Gestão de Usuários',
+    }),
+  })
+}

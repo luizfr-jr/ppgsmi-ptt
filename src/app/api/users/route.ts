@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/auth'
+import { sendWelcomeEmail } from '@/lib/email'
 
 const VALID_ROLES = ['ALUNO', 'ORIENTADOR', 'COORDENACAO', 'SUPERADMIN']
 const CAN_LIST_ALL = ['ORIENTADOR', 'COORDENACAO', 'SUPERADMIN']
@@ -79,6 +80,14 @@ export async function POST(req: NextRequest) {
         role,
       },
       select: { id: true, name: true, email: true, role: true, createdAt: true },
+    })
+
+    // Fire-and-forget welcome email — failures are logged inside sendMail
+    void sendWelcomeEmail({
+      to: user.email,
+      userName: user.name,
+      role: user.role,
+      createdByAdmin: true,
     })
 
     return NextResponse.json({ success: true, data: user }, { status: 201 })
