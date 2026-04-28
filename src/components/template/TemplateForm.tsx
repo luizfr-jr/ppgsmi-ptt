@@ -229,9 +229,10 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
   // the case where a coordenadora is also someone's orientadora.
   const isLinkedAdvisor = !!currentUser?.id && (template as any).advisorId === currentUser.id
   const isAdvisor = userRole === 'ORIENTADOR' || isLinkedAdvisor
-  // Coord buttons stay reserved for coord/superadmin who are NOT the advisor of
-  // this specific template (so the same person doesn't see both buttons at once).
-  const isCoord = (userRole === 'COORDENACAO' || userRole === 'SUPERADMIN') && !isLinkedAdvisor
+  // A coord/superadmin always sees the coord buttons when applicable. Even if
+  // they are also the linked advisor, the two sets never collide because they
+  // are gated by different statuses (ENVIADO vs AGUARDANDO_COORDENACAO).
+  const isCoord = userRole === 'COORDENACAO' || userRole === 'SUPERADMIN'
   const isStudent = userRole === 'ALUNO'
 
   return (
