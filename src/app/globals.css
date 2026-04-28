@@ -15,6 +15,13 @@
     @apply border-gray-200;
   }
 
+  /* Reserve space for the vertical scrollbar even when content is short.
+     Prevents horizontal layout shift (sidebar/header re-flowing) when the
+     page changes between scrollable and non-scrollable content. */
+  html {
+    scrollbar-gutter: stable;
+  }
+
   body {
     @apply bg-ninma-gray-light text-ninma-dark font-sans;
   }
