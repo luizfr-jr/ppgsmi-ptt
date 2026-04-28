@@ -15,11 +15,17 @@
     @apply border-gray-200;
   }
 
-  /* Reserve space for the vertical scrollbar even when content is short.
-     Prevents horizontal layout shift (sidebar/header re-flowing) when the
-     page changes between scrollable and non-scrollable content. */
+  /* Force a vertical scrollbar to always be rendered, so the viewport width
+     stays constant regardless of whether the page content actually overflows.
+     `overflow-y: scroll` is universally supported (better than scrollbar-gutter)
+     and works on every browser. Combined with scrollbar-gutter for browsers
+     that prefer the modern API. */
   html {
+    overflow-y: scroll;
     scrollbar-gutter: stable;
+  }
+  body {
+    overflow-x: hidden;
   }
 
   body {
