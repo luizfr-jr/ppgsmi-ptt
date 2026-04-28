@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Header } from '@/components/layout/Header'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { PWAInstallPrompt } from '@/components/layout/PWAInstallPrompt'
-import { FileText, Search, Eye } from 'lucide-react'
+import { FileText, Search, Eye, Users, UsersRound } from 'lucide-react'
 import { Template } from '@/types'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -26,8 +26,15 @@ export function CoordDashboard({ user, templates }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
+  // 'all' = todos os templates do programa (visão padrão da coordenação)
+  // 'mine' = somente templates onde o usuário logado é o orientador
+  const [scope, setScope] = useState<'all' | 'mine'>('all')
+
+  // Templates onde o usuário atual é o orientador (mesmo sendo coordenação)
+  const myAdviseesCount = templates.filter(t => (t as any).advisorId === user.id).length
 
   const filtered = templates.filter(t => {
+    if (scope === 'mine' && (t as any).advisorId !== user.id) return false
     const matchSearch = !search ||
       (t.tituloPt || '').toLowerCase().includes(search.toLowerCase()) ||
       (t.student?.name || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -43,19 +50,54 @@ export function CoordDashboard({ user, templates }: Props) {
         <Sidebar role={user.role} open={menuOpen} onClose={() => setMenuOpen(false)} />
         <main className="flex-1 p-4 md:p-8">
           <div className="max-w-5xl mx-auto">
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold text-ninma-dark">Templates – Coordenação</h1>
-              <p className="text-gray-500 mt-1">Visualize e comente todos os templates do PPGSMI</p>
+            <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <h1 className="text-2xl font-bold text-ninma-dark">Templates – Coordenação</h1>
+                <p className="text-gray-500 mt-1">
+                  {scope === 'mine'
+                    ? 'Mostrando apenas templates dos seus orientandos'
+                    : 'Visualize e comente todos os templates do PPGSMI'}
+                </p>
+              </div>
+
+              {/* Scope toggle — só aparece se o coordenador também tem orientandos */}
+              {myAdviseesCount > 0 && (
+                <div className="inline-flex bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
+                  <button
+                    onClick={() => setScope('all')}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      scope === 'all' ? 'bg-ninma-teal text-white shadow' : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <UsersRound size={15} />
+                    Todos ({templates.length})
+                  </button>
+                  <button
+                    onClick={() => setScope('mine')}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      scope === 'mine' ? 'bg-ninma-purple text-white shadow' : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Users size={15} />
+                    Meus orientandos ({myAdviseesCount})
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* Stats */}
+            {/* Stats — adapt to current scope */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              {[
-                { label: 'Total', value: templates.length, color: 'bg-ninma-teal-light text-ninma-teal-dark' },
-                { label: 'Rascunhos', value: templates.filter(t => t.status === 'RASCUNHO').length, color: 'bg-gray-100 text-gray-600' },
-                { label: 'Em Revisão', value: templates.filter(t => t.status === 'REVISAO').length, color: 'bg-ninma-orange-light text-ninma-orange-dark' },
-                { label: 'Aprovados', value: templates.filter(t => t.status === 'APROVADO').length, color: 'bg-green-100 text-green-700' },
-              ].map(stat => (
+              {(() => {
+                const base = scope === 'mine'
+                  ? templates.filter(t => (t as any).advisorId === user.id)
+                  : templates
+                return [
+                  { label: 'Total',      value: base.length,                                          color: 'bg-ninma-teal-light text-ninma-teal-dark' },
+                  { label: 'Rascunhos',  value: base.filter(t => t.status === 'RASCUNHO').length,    color: 'bg-gray-100 text-gray-600' },
+                  { label: 'Em Revisão', value: base.filter(t => t.status === 'REVISAO').length,     color: 'bg-ninma-orange-light text-ninma-orange-dark' },
+                  { label: 'Aprovados',  value: base.filter(t => t.status === 'APROVADO').length,    color: 'bg-green-100 text-green-700' },
+                ]
+              })().map(stat => (
                 <div key={stat.label} className={`card ${stat.color} border-0`}>
                   <div className="text-2xl font-bold">{stat.value}</div>
                   <div className="text-xs font-medium mt-1">{stat.label}</div>
