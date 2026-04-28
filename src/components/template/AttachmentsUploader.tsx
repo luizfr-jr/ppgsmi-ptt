@@ -27,21 +27,76 @@ export function AttachmentsUploader({ templateId, initial, readOnly = false, sec
   const [dragOver, setDragOver] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // Vercel serverless functions on Hobby tier cap request bodies at ~4.5 MB.
+  // Files above this threshold are uploaded directly to Supabase Storage via
+  // a signed URL, then registered in the DB with a small finalize call.
+  const DIRECT_UPLOAD_THRESHOLD = 4 * 1024 * 1024 // 4 MB
+
+  async function uploadSmall(file: File): Promise<Attachment | null> {
+    const fd = new FormData()
+    fd.append('files', file)
+    if (section) fd.append('section', section)
+    const res = await fetch(`/api/templates/${templateId}/attachments`, {
+      method: 'POST',
+      body: fd,
+    })
+    const data = await res.json()
+    if (!data.success) throw new Error(data.error || 'Upload falhou')
+    return data.data?.[0] || null
+  }
+
+  async function uploadLarge(file: File): Promise<Attachment | null> {
+    // Step 1 — ask backend for a signed upload URL
+    const signRes = await fetch(`/api/templates/${templateId}/attachments/sign-upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: file.name, mimeType: file.type }),
+    })
+    const signed = await signRes.json()
+    if (!signed.success) throw new Error(signed.error || 'Falha ao gerar URL assinada')
+
+    // Step 2 — PUT the file directly to Supabase Storage
+    const putRes = await fetch(signed.uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      body: file,
+    })
+    if (!putRes.ok) throw new Error('Falha no upload para o storage')
+
+    // Step 3 — register the attachment in the database
+    const finRes = await fetch(`/api/templates/${templateId}/attachments/finalize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename:     signed.filename,
+        originalName: file.name,
+        mimeType:     file.type || 'application/octet-stream',
+        size:         file.size,
+        section:      section || undefined,
+      }),
+    })
+    const fin = await finRes.json()
+    if (!fin.success) throw new Error(fin.error || 'Erro ao registrar anexo')
+    return fin.data
+  }
+
   async function handleFiles(files: FileList) {
     if (!files.length) return
     setUploading(true)
-    const formData = new FormData()
-    Array.from(files).forEach(f => formData.append('files', f))
-    if (section) formData.append('section', section)
+    const newAttachments: Attachment[] = []
     try {
-      const res = await fetch(`/api/templates/${templateId}/attachments`, {
-        method: 'POST',
-        body: formData,
-      })
-      const data = await res.json()
-      if (data.success) {
-        setList(prev => [...prev, ...data.data])
+      for (const file of Array.from(files)) {
+        try {
+          const att = file.size > DIRECT_UPLOAD_THRESHOLD
+            ? await uploadLarge(file)
+            : await uploadSmall(file)
+          if (att) newAttachments.push(att)
+        } catch (err) {
+          console.error(`Failed to upload ${file.name}:`, err)
+          alert(`Falha ao enviar "${file.name}": ${(err as Error).message}`)
+        }
       }
+      if (newAttachments.length > 0) setList(prev => [...prev, ...newAttachments])
     } finally {
       setUploading(false)
       if (inputRef.current) inputRef.current.value = ''

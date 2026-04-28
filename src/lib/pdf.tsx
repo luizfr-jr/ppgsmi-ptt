@@ -93,7 +93,12 @@ const boolLabels:     Record<string,string> = { SIM:'Sim', NAO:'Não' }
 const abrangLabels:   Record<string,string> = { INTERNACIONAL:'Internacional', NACIONAL:'Nacional', REGIONAL:'Regional', LOCAL:'Local' }
 const complexLabels:  Record<string,string> = { ALTA:'Alta', MEDIA:'Média', BAIXA:'Baixa' }
 const inovacaoLabels: Record<string,string> = { ALTO:'Alto teor inovativo', MEDIO:'Médio teor inovativo', BAIXO:'Baixo teor inovativo', SEM:'Sem Inovação' }
-const fomentosLabels: Record<string,string> = { FINANCIAMENTO:'Financiamento', COOPERACAO:'Cooperação' }
+const fomentosLabels: Record<string,string> = {
+  FINANCIAMENTO:         'Financiamento',
+  COOPERACAO:            'Cooperação',
+  FINANCIAMENTO_PROPRIO: 'Financiamento próprio',
+  SEM_FINANCIAMENTO:     'Sem financiamento',
+}
 const areaLabels:     Record<string,string> = { ECONOMICO:'Econômico', SAUDE:'Saúde', ENSINO:'Ensino', SOCIAL:'Social', AMBIENTAL:'Ambiental', CIENTIFICO:'Científico', APRENDIZAGEM:'Aprendizagem', CULTURAL:'Cultural' }
 // Setor da sociedade — espelha exatamente o SECTOR_OPTIONS do formulário
 const setorLabels:    Record<string,string> = {
@@ -246,9 +251,11 @@ const s = StyleSheet.create({
   fieldBody:     { flex: 1 },
   fieldLabel:    { fontSize: 9.5, fontWeight: 700, letterSpacing: 0.6, color: C.purple, marginBottom: 4 },
   fieldSubLabel: { fontSize: 9.5, fontStyle: 'italic', fontWeight: 500, color: C.inkSoft, marginBottom: 3 },
-  fieldValue:    { fontSize: 11, lineHeight: 1.6, color: C.ink },
+  fieldValue:    { fontSize: 11, lineHeight: 1.6, color: C.ink, textAlign: 'justify' },
   fieldEmpty:    { fontSize: 11, lineHeight: 1.6, color: C.muted, fontStyle: 'italic' },
   fieldListItem: { fontSize: 11, lineHeight: 1.6, color: C.ink, marginBottom: 1 },
+  // Force-break long URLs that have no spaces — prevents overflow off the page
+  fieldLink:     { fontSize: 11, lineHeight: 1.6, color: C.purple, textDecoration: 'underline' },
 
   // ── Impact ──
   impactGrid: { flexDirection: 'row', gap: 8, marginBottom: 14 },
@@ -271,7 +278,7 @@ const s = StyleSheet.create({
   // ── Annex ──
   annexGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   annexCard: {
-    width: '47.5%', borderWidth: 1, borderColor: C.rule, borderRadius: 11,
+    width: '100%', borderWidth: 1, borderColor: C.rule, borderRadius: 11,
     paddingHorizontal: 12, paddingVertical: 12,
     flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: C.paper,
   },
@@ -359,6 +366,12 @@ function SealLine({ width = 130 }: { width?: number }) {
 
 // ─── RichText — detects URLs and renders as clickable Link ───────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+// Insert zero-width spaces in long URLs so @react-pdf can break them across lines.
+// Without this, long URLs overflow horizontally and get visually clipped.
+function breakableUrl(url: string): string {
+  return url.replace(/([\/?&=._-])/g, '$1​')
+}
+
 function RichText({ text, style }: { text: string; style: any }) {
   const URL_RE = /https?:\/\/[^\s]+/g
   const parts: { txt: string; isUrl: boolean }[] = []
@@ -379,7 +392,7 @@ function RichText({ text, style }: { text: string; style: any }) {
     <Text style={style}>
       {parts.map((p, i) =>
         p.isUrl
-          ? <Link key={i} src={p.txt}><Text style={{ color: C.purple, textDecoration: 'underline' }}>{p.txt}</Text></Link>
+          ? <Link key={i} src={p.txt}><Text style={{ color: C.purple, textDecoration: 'underline' }}>{breakableUrl(p.txt)}</Text></Link>
           : <Text key={i}>{p.txt}</Text>
       )}
     </Text>
@@ -406,7 +419,8 @@ function Head({ section, docId, images }: { section: string; docId: string; imag
       <Text style={s.headSection}>
         <Text style={s.headPurple}>· </Text>{section.toUpperCase()}
       </Text>
-      <Text style={s.headDocId}>{docId}</Text>
+      {/* docId removed at user request — keeps the header clean */}
+      <View style={{ width: 74 }} />
     </View>
   )
 }
@@ -458,7 +472,7 @@ interface FieldItem { n: number; label: string; value: string|string[]; sub?: bo
 function Field({ item }: { item: FieldItem }) {
   const empty = !item.value || item.value === '—' || (Array.isArray(item.value) && item.value.length === 0)
   if (item.sub) return (
-    <View style={s.fieldSub}>
+    <View style={s.fieldSub} wrap={false}>
       <View style={s.fieldSubArrow}><Text style={s.fieldSubArrowText}>↳</Text></View>
       <View style={s.fieldBody}>
         <Text style={s.fieldSubLabel}>{item.label}</Text>
@@ -469,11 +483,13 @@ function Field({ item }: { item: FieldItem }) {
       </View>
     </View>
   )
+  // Outer View must NOT wrap=false — long values should be allowed to flow to the next page.
+  // Instead, group the number box + label as an inseparable "minipresenter" using minPresenceAhead.
   return (
     <View style={s.field}>
-      <View style={s.fieldNBox}><Text style={s.fieldNText}>{String(item.n).padStart(2,'0')}</Text></View>
+      <View style={s.fieldNBox} minPresenceAhead={20}><Text style={s.fieldNText}>{String(item.n).padStart(2,'0')}</Text></View>
       <View style={s.fieldBody}>
-        <Text style={s.fieldLabel}>{item.label.toUpperCase()}</Text>
+        <Text style={s.fieldLabel} minPresenceAhead={30}>{item.label.toUpperCase()}</Text>
         {item.list && Array.isArray(item.value)
           ? <View>{item.value.map((v,i) => <Text key={i} style={s.fieldListItem}>{v}</Text>)}</View>
           : empty
@@ -755,19 +771,21 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
                     </View>
                   </View>
                 ))}
-                {/* Non-image files — metadata cards in 2-column grid */}
+                {/* Non-image files — clickable cards opening the original file */}
                 {doc.annexes.filter(a => !a.isImage || !a.dataUrl).length > 0 && (
                   <View style={s.annexGrid}>
                     {doc.annexes.filter(a => !a.isImage || !a.dataUrl).map((a, i) => (
-                      <View key={`file-${i}`} style={s.annexCard}>
-                        <View style={[s.annexThumb, a.isEven ? s.annexThumbAlt : {}]}>
-                          <Text style={[s.annexThumbText, a.isEven ? s.annexThumbTextAlt : {}]}>{a.ext}</Text>
+                      <Link key={`file-${i}`} src={a.url} style={{ width: '47.5%', textDecoration: 'none' }}>
+                        <View style={s.annexCard}>
+                          <View style={[s.annexThumb, a.isEven ? s.annexThumbAlt : {}]}>
+                            <Text style={[s.annexThumbText, a.isEven ? s.annexThumbTextAlt : {}]}>{a.ext}</Text>
+                          </View>
+                          <View style={s.annexCardBody}>
+                            <Text style={s.annexName}>{a.name}</Text>
+                            <Text style={s.annexMeta}>{a.meta} · clique para abrir</Text>
+                          </View>
                         </View>
-                        <View style={s.annexCardBody}>
-                          <Text style={s.annexName}>{a.name}</Text>
-                          <Text style={s.annexMeta}>{a.meta}</Text>
-                        </View>
-                      </View>
+                      </Link>
                     ))}
                   </View>
                 )}

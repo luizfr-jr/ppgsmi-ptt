@@ -106,7 +106,9 @@ export function OrientadorDashboard({ user, templates }: Props) {
                           className="btn-outline flex items-center gap-2 py-2 px-4 flex-shrink-0"
                         >
                           <Edit2 size={15} />
-                          <span className="hidden sm:inline">Revisar</span>
+                          <span className="hidden sm:inline">
+                            {template.status === 'ENVIADO' ? 'Revisar' : 'Visualizar'}
+                          </span>
                         </Link>
                       </div>
                     </div>

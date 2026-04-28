@@ -24,8 +24,9 @@ interface Props {
 
 export function TemplateDetailCoord({ user, template: initialTemplate }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [template] = useState(initialTemplate)
+  const [template, setTemplate] = useState(initialTemplate)
   const [comments, setComments] = useState<Comment[]>(initialTemplate.comments || [])
+  const [events, setEvents] = useState(initialTemplate.events || [])
 
   return (
     <div className="min-h-screen bg-ninma-gray-light flex flex-col">
@@ -59,7 +60,7 @@ export function TemplateDetailCoord({ user, template: initialTemplate }: Props) 
 
             <TimelineView
               currentStatus={template.status}
-              events={initialTemplate.events}
+              events={events}
               className="mb-6"
             />
 
@@ -70,6 +71,19 @@ export function TemplateDetailCoord({ user, template: initialTemplate }: Props) 
               readOnly={true}
               canChangeStatus={true}
               userRole={user.role as 'COORDENACAO' | 'SUPERADMIN'}
+              currentUser={user}
+              onSaved={setTemplate as any}
+              onStatusChanged={(t) => setEvents(prev => [...prev, {
+                id: `local-${Date.now()}`,
+                templateId: template.id,
+                actorId: user.id,
+                actorName: t.actorName,
+                actorRole: t.actorRole,
+                fromStatus: t.fromStatus,
+                toStatus: t.toStatus,
+                note: null,
+                createdAt: t.createdAt,
+              }])}
             />
 
             <div className="mt-6">

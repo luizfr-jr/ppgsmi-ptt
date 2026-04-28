@@ -17,7 +17,12 @@ interface TemplateFormProps {
   // Role of the currently logged-in user, used to pick which status
   // transitions appear in the toolbar. Falls back gracefully if absent.
   userRole?: 'ALUNO' | 'ORIENTADOR' | 'COORDENACAO' | 'SUPERADMIN'
+  // Snapshot of who's logged in — used to build a local synthetic timeline
+  // event the moment the status changes, so the TimelineView updates instantly
+  // without a page refresh.
+  currentUser?: { id: string; name: string | null; role: string }
   onSaved?: (t: Template) => void
+  onStatusChanged?: (transition: { fromStatus: string; toStatus: string; actorName: string | null; actorRole: string; createdAt: string }) => void
 }
 
 const SECTOR_OPTIONS = [
@@ -47,7 +52,7 @@ function isValidUrl(url: string): boolean {
   try { new URL(url); return true } catch { return false }
 }
 
-export function TemplateForm({ template: initialTemplate, attachments = [], readOnly = false, canChangeStatus = false, userRole, onSaved }: TemplateFormProps) {
+export function TemplateForm({ template: initialTemplate, attachments = [], readOnly = false, canChangeStatus = false, userRole, currentUser, onSaved, onStatusChanged }: TemplateFormProps) {
   const [template, setTemplate] = useState(initialTemplate)
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState<Date | null>(null)
@@ -100,7 +105,66 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
     }
   }
 
+  // Required-field check used before letting the aluno send the template for review
+  const REQUIRED_FIELDS: { key: keyof Template; label: string }[] = [
+    { key: 'aluno',                 label: 'Aluno' },
+    { key: 'orientador',            label: 'Orientador' },
+    { key: 'data',                  label: 'Data de submissão' },
+    { key: 'tituloPt',              label: 'Q1 — Título do Produto (Português)' },
+    { key: 'tituloEn',              label: 'Q1 — Título do Produto (Inglês)' },
+    { key: 'linhaPesquisa',         label: 'Q2 — Linha de Pesquisa' },
+    { key: 'participantes',         label: 'Q3 — Participação de discente/egresso/docente e participante externo' },
+    { key: 'objetivo',              label: 'Q4 — Objetivo' },
+    { key: 'finalidade',            label: 'Q5 — Finalidade' },
+    { key: 'referencialTeorico',    label: 'Q6 — Referencial teórico' },
+    { key: 'descricaoProduto',      label: 'Q7 — Descrição do Produto' },
+    { key: 'relevancia',            label: 'Q8 — Relevância' },
+    { key: 'impactoNivel',          label: 'Q10 — Impacto: Nível' },
+    { key: 'impactoDemanda',        label: 'Q11 — Impacto: Demanda' },
+    { key: 'impactoObjetivo',       label: 'Q12 — Impacto: Objetivo' },
+    { key: 'impactoArea',           label: 'Q13 — Impacto: Área Impactada' },
+    { key: 'impactoTipo',           label: 'Q14 — Impacto: Tipo' },
+    { key: 'replicabilidade',       label: 'Q15 — Replicabilidade' },
+    { key: 'abrangencia',           label: 'Q16 — Abrangência territorial' },
+    { key: 'complexidade',          label: 'Q17 — Complexidade' },
+    { key: 'inovacao',              label: 'Q18 — Inovação' },
+    { key: 'setorBeneficiado',      label: 'Q19 — Setor da sociedade beneficiado' },
+    { key: 'vinculoPDI',            label: 'Q20 — Vínculo com o PDI' },
+    { key: 'fomento',               label: 'Q21 — Fomento' },
+    { key: 'estagioTecnologia',     label: 'Q23 — Estágio da tecnologia' },
+    { key: 'transferenciaConhecimento', label: 'Q24 — Transferência de tecnologia/conhecimento' },
+  ]
+  const [missingFields, setMissingFields] = useState<string[]>([])
+
+  function isFieldFilled(key: keyof Template): boolean {
+    const v = template[key] as unknown
+    if (v == null || v === '') return false
+    if (typeof v === 'string') {
+      // JSON-array fields (impactoArea, setorBeneficiado) are stored as strings
+      if (v.startsWith('[')) {
+        try { return JSON.parse(v).length > 0 } catch { return false }
+      }
+      return v.trim().length > 0
+    }
+    return true
+  }
+
+  function findMissing(): string[] {
+    return REQUIRED_FIELDS.filter(f => !isFieldFilled(f.key)).map(f => f.label)
+  }
+
   async function handleStatusChange(newStatus: TemplateStatus) {
+    // Block aluno from submitting an incomplete template
+    if (newStatus === 'ENVIADO' && userRole === 'ALUNO') {
+      const missing = findMissing()
+      if (missing.length > 0) {
+        setMissingFields(missing)
+        // Scroll to the top alert so the user actually sees it
+        if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' })
+        return
+      }
+    }
+    setMissingFields([])
     const res = await fetch(`/api/templates/${template.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -108,8 +172,17 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
     })
     const data = await res.json()
     if (data.success) {
+      const fromStatus = template.status
       setTemplate(prev => ({ ...prev, status: newStatus }))
       onSaved?.(data.data)
+      // Notify parent so the TimelineView re-renders immediately with the new event
+      onStatusChanged?.({
+        fromStatus,
+        toStatus: newStatus,
+        actorName: currentUser?.name || null,
+        actorRole: currentUser?.role || userRole || 'SYSTEM',
+        createdAt: new Date().toISOString(),
+      })
     }
   }
 
@@ -151,12 +224,41 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
     APROVADO: 'bg-green-100 text-green-700',
   }
 
-  const isCoord = userRole === 'COORDENACAO' || userRole === 'SUPERADMIN'
-  const isAdvisor = userRole === 'ORIENTADOR'
+  // A user can act as the advisor of THIS template if they are the linked
+  // advisor — even if their primary role is COORDENACAO/SUPERADMIN. This unblocks
+  // the case where a coordenadora is also someone's orientadora.
+  const isLinkedAdvisor = !!currentUser?.id && (template as any).advisorId === currentUser.id
+  const isAdvisor = userRole === 'ORIENTADOR' || isLinkedAdvisor
+  // Coord buttons stay reserved for coord/superadmin who are NOT the advisor of
+  // this specific template (so the same person doesn't see both buttons at once).
+  const isCoord = (userRole === 'COORDENACAO' || userRole === 'SUPERADMIN') && !isLinkedAdvisor
   const isStudent = userRole === 'ALUNO'
 
   return (
     <div className="space-y-6">
+      {/* Validation alert when required fields are missing */}
+      {missingFields.length > 0 && (
+        <div className="card border-2 border-ninma-pink bg-ninma-pink/5">
+          <div className="flex items-start gap-3">
+            <AlertCircle size={20} className="text-ninma-pink flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <div className="font-bold text-ninma-pink mb-2">
+                Não foi possível enviar — {missingFields.length} {missingFields.length === 1 ? 'campo obrigatório está vazio' : 'campos obrigatórios estão vazios'}
+              </div>
+              <ul className="text-sm text-gray-700 list-disc pl-5 space-y-0.5 max-h-48 overflow-y-auto">
+                {missingFields.map(f => <li key={f}>{f}</li>)}
+              </ul>
+              <button
+                onClick={() => setMissingFields([])}
+                className="mt-3 text-xs font-semibold text-ninma-pink hover:underline"
+              >
+                Fechar aviso
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="card sticky top-16 z-30 flex items-center justify-between gap-3 flex-wrap shadow-md">
         <div className="flex items-center gap-3">
@@ -496,6 +598,9 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
             <span className="field-number">10</span>
             Nível
           </div>
+          <p className="text-xs italic text-gray-500 -mt-2 mb-3">
+            Observação: Relacionado com mudanças causadas pela introdução do produto no ambiente social.
+          </p>
           <RadioGroup
             name="impactoNivel"
             value={template.impactoNivel}
@@ -659,13 +764,16 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
           <span className="field-number">17</span>
           Complexidade
         </div>
+        <p className="text-xs italic text-gray-500 -mt-2 mb-3">
+          Obs: Refere-se ao grau de interação entre atores, relações e conhecimentos necessários à elaboração e ao desenvolvimento do Produto Técnico-Tecnológico.
+        </p>
         <RadioGroup
           name="complexidade"
           value={template.complexidade}
           onChange={v => update('complexidade', v)}
           disabled={readOnly}
           options={[
-            { value: 'ALTA', label: 'Alta', description: 'Sinergia ou associação de diferentes áreas do conhecimento e interação de múltiplos atores.' },
+            { value: 'ALTA', label: 'Alta', description: 'Sinergia ou associação de diferentes áreas do conhecimento e interação de múltiplos atores, identificável nas etapas/passos e nas soluções geradas, associadas ao Produto Técnico-Tecnológico.' },
             { value: 'MEDIA', label: 'Média', description: 'Combinação de conhecimentos pré-estabelecidos restrita à uma área do conhecimento e participação de poucos autores.' },
             { value: 'BAIXA', label: 'Baixa', description: 'Alteração/adaptação de conhecimento existente e estabelecido sem a participação de diferentes atores.' },
           ]}
@@ -759,8 +867,10 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
           onChange={v => update('fomento', v)}
           disabled={readOnly}
           options={[
-            { value: 'FINANCIAMENTO', label: 'Financiamento', description: 'Externo ao programa.' },
-            { value: 'COOPERACAO', label: 'Cooperação', description: 'Desenvolvimento em parceria externa ao programa.' },
+            { value: 'FINANCIAMENTO',         label: 'Financiamento',          description: 'Externo ao programa.' },
+            { value: 'COOPERACAO',            label: 'Cooperação',             description: 'Desenvolvimento em parceria externa ao programa.' },
+            { value: 'FINANCIAMENTO_PROPRIO', label: 'Financiamento próprio',  description: 'Recursos próprios do programa, do pesquisador ou da instituição.' },
+            { value: 'SEM_FINANCIAMENTO',     label: 'Sem financiamento',      description: 'Produto desenvolvido sem aporte financeiro específico.' },
           ]}
         />
         <div className="mt-3">

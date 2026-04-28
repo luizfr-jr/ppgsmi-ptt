@@ -38,9 +38,10 @@ export function TemplateDetailStudent({ user, template: initialTemplate }: Props
 
   const [template, setTemplate] = useState(prefilled)
   const [comments, setComments] = useState<Comment[]>(initialTemplate.comments || [])
+  const [events, setEvents] = useState(initialTemplate.events || [])
 
   const canEdit = template.status === 'RASCUNHO' || template.status === 'REVISAO'
-  const canSubmit = template.status === 'RASCUNHO'
+  const canSubmit = template.status === 'RASCUNHO' || template.status === 'REVISAO'
 
   async function handleDelete() {
     if (!confirm('Tem certeza que deseja excluir este template? Esta ação não pode ser desfeita.')) return
@@ -94,7 +95,7 @@ export function TemplateDetailStudent({ user, template: initialTemplate }: Props
             {/* Workflow timeline */}
             <TimelineView
               currentStatus={template.status}
-              events={initialTemplate.events}
+              events={events}
               className="mb-6"
             />
 
@@ -105,7 +106,19 @@ export function TemplateDetailStudent({ user, template: initialTemplate }: Props
               readOnly={!canEdit}
               canChangeStatus={canSubmit}
               userRole="ALUNO"
+              currentUser={currentUser}
               onSaved={setTemplate as any}
+              onStatusChanged={(t) => setEvents(prev => [...prev, {
+                id: `local-${Date.now()}`,
+                templateId: template.id,
+                actorId: currentUser.id,
+                actorName: t.actorName,
+                actorRole: t.actorRole,
+                fromStatus: t.fromStatus,
+                toStatus: t.toStatus,
+                note: null,
+                createdAt: t.createdAt,
+              }])}
             />
 
             {/* Comments (read-only for student) */}

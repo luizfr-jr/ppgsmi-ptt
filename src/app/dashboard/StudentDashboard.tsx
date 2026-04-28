@@ -136,7 +136,9 @@ export function StudentDashboard({ user, templates }: Props) {
                           className="btn-outline flex items-center gap-2 py-2 px-4 flex-shrink-0"
                         >
                           <Edit size={15} />
-                          <span className="hidden sm:inline">Editar</span>
+                          <span className="hidden sm:inline">
+                            {(template.status === 'RASCUNHO' || template.status === 'REVISAO') ? 'Editar' : 'Visualizar'}
+                          </span>
                         </Link>
                       </div>
                     </div>
