@@ -105,6 +105,10 @@ export default function LoginPage() {
                   required
                   autoFocus
                 />
+                <p className="text-xs text-gray-400 mt-1.5 leading-relaxed">
+                  Acesso restrito a usuários da UFN. Avaliadores externos e colaboradores
+                  precisam ser pré-cadastrados pela coordenação do PPGSMI.
+                </p>
               </div>
 
               <button type="submit" className="btn-primary w-full" disabled={loading}>
