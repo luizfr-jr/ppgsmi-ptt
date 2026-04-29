@@ -154,7 +154,7 @@ export function UserManagement({ currentUser, initialUsers }: Props) {
       <Header user={currentUser} onMenuToggle={() => setMenuOpen(o => !o)} menuOpen={menuOpen} />
       <div className="flex flex-1">
         <Sidebar role={currentUser.role} open={menuOpen} onClose={() => setMenuOpen(false)} />
-        <main className="flex-1 p-4 md:p-8">
+        <main className="flex-1 min-w-0 p-4 md:p-8">
           <div className="max-w-5xl mx-auto">
 
             {/* Header */}

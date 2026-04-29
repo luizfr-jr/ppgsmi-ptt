@@ -45,7 +45,9 @@ export function Sidebar({ role, open, onClose }: SidebarProps) {
       )}
 
       <aside className={clsx(
-        'fixed md:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-100 flex flex-col transition-transform duration-300 md:translate-x-0',
+        // shrink-0 prevents the flex parent from compressing the sidebar when
+        // wide content (like long template titles) tries to expand <main>
+        'fixed md:static inset-y-0 left-0 z-40 w-64 shrink-0 bg-white border-r border-gray-100 flex flex-col transition-transform duration-300 md:translate-x-0',
         open ? 'translate-x-0' : '-translate-x-full'
       )}>
         <div className="p-4 border-b border-gray-100">

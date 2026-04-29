@@ -33,7 +33,7 @@ export function TemplateDetailCoord({ user, template: initialTemplate }: Props) 
       <Header user={user} onMenuToggle={() => setMenuOpen(o => !o)} menuOpen={menuOpen} />
       <div className="flex flex-1">
         <Sidebar role="COORDENACAO" open={menuOpen} onClose={() => setMenuOpen(false)} />
-        <main className="flex-1 p-4 md:p-8">
+        <main className="flex-1 min-w-0 p-4 md:p-8">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
               <Link href="/coordenacao" className="flex items-center gap-2 text-ninma-teal hover:underline text-sm">

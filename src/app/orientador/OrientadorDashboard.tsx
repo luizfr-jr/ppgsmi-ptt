@@ -37,7 +37,7 @@ export function OrientadorDashboard({ user, templates }: Props) {
       <Header user={user} onMenuToggle={() => setMenuOpen(o => !o)} menuOpen={menuOpen} />
       <div className="flex flex-1">
         <Sidebar role={user.role} open={menuOpen} onClose={() => setMenuOpen(false)} />
-        <main className="flex-1 p-4 md:p-8">
+        <main className="flex-1 min-w-0 p-4 md:p-8">
           <div className="max-w-4xl mx-auto">
             <div className="mb-8">
               <h1 className="text-2xl font-bold text-ninma-dark">Meus Orientandos</h1>

@@ -48,7 +48,10 @@ export function CoordDashboard({ user, templates }: Props) {
       <Header user={user} onMenuToggle={() => setMenuOpen(o => !o)} menuOpen={menuOpen} />
       <div className="flex flex-1">
         <Sidebar role={user.role} open={menuOpen} onClose={() => setMenuOpen(false)} />
-        <main className="flex-1 p-4 md:p-8">
+        {/* min-w-0 lets the flex child shrink below intrinsic width when long
+            content (like template titles) needs to be truncated, instead of
+            pushing main outside the viewport and compressing the sidebar. */}
+        <main className="flex-1 min-w-0 p-4 md:p-8">
           <div className="max-w-5xl mx-auto">
             <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
               <div>
