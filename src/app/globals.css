@@ -3,6 +3,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Always render a vertical scrollbar so the viewport width never changes when
+   page content shrinks or grows. Placed OUTSIDE @layer to avoid Tailwind's
+   layer ordering shenanigans, and with !important to beat any preflight. */
+html {
+  overflow-y: scroll !important;
+  scrollbar-gutter: stable !important;
+}
+
 @layer base {
   :root {
     --ninma-teal: #5fc3ad;
@@ -15,18 +23,6 @@
     @apply border-gray-200;
   }
 
-  /* Force a vertical scrollbar to always be rendered, so the viewport width
-     stays constant regardless of whether the page content actually overflows.
-     `overflow-y: scroll` is universally supported (better than scrollbar-gutter)
-     and works on every browser. Combined with scrollbar-gutter for browsers
-     that prefer the modern API. */
-  html {
-    overflow-y: scroll;
-    scrollbar-gutter: stable;
-  }
-  body {
-    overflow-x: hidden;
-  }
 
   body {
     @apply bg-ninma-gray-light text-ninma-dark font-sans;
