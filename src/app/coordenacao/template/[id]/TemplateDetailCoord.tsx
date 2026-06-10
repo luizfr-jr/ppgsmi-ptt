@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Header } from '@/components/layout/Header'
 import { Sidebar } from '@/components/layout/Sidebar'
@@ -10,6 +10,7 @@ import { CommentPanel } from '@/components/template/CommentPanel'
 import { PWAInstallPrompt } from '@/components/layout/PWAInstallPrompt'
 import { ArrowLeft, User, Users } from 'lucide-react'
 import { Template, Comment, Attachment } from '@/types'
+import { markCommentsSeen } from '@/lib/commentSeen'
 
 interface Props {
   user: { id: string; email: string; name: string | null; role: string }
@@ -27,6 +28,9 @@ export function TemplateDetailCoord({ user, template: initialTemplate }: Props) 
   const [template, setTemplate] = useState(initialTemplate)
   const [comments, setComments] = useState<Comment[]>(initialTemplate.comments || [])
   const [events, setEvents] = useState(initialTemplate.events || [])
+
+  // Clear the "new comments" badge for this template on this device
+  useEffect(() => { markCommentsSeen(initialTemplate.id) }, [initialTemplate.id])
 
   return (
     <div className="min-h-screen bg-ninma-gray-light flex flex-col">

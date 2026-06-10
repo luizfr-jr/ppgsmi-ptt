@@ -15,6 +15,9 @@ export default async function DashboardPage() {
 
   const templates = await prisma.template.findMany({
     where: { studentId: session.user.id },
+    include: {
+      comments: { select: { id: true, authorId: true, createdAt: true } },
+    },
     orderBy: { updatedAt: 'desc' },
   })
 

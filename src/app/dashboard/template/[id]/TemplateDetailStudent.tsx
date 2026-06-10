@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Header } from '@/components/layout/Header'
@@ -12,6 +12,7 @@ import { PWAInstallPrompt } from '@/components/layout/PWAInstallPrompt'
 import { SetupModal, needsSetup } from '@/components/layout/SetupModal'
 import { ArrowLeft, Trash2 } from 'lucide-react'
 import { Template, Comment, Attachment } from '@/types'
+import { markCommentsSeen } from '@/lib/commentSeen'
 
 interface Props {
   user: { id: string; email: string; name: string | null; role: string; advisorId?: string | null; advisor?: { name: string | null; email: string } | null }
@@ -39,6 +40,9 @@ export function TemplateDetailStudent({ user, template: initialTemplate }: Props
   const [template, setTemplate] = useState(prefilled)
   const [comments, setComments] = useState<Comment[]>(initialTemplate.comments || [])
   const [events, setEvents] = useState(initialTemplate.events || [])
+
+  // Clear the "new comments" badge for this template on this device
+  useEffect(() => { markCommentsSeen(initialTemplate.id) }, [initialTemplate.id])
 
   const canEdit = template.status === 'RASCUNHO' || template.status === 'REVISAO'
   const canSubmit = template.status === 'RASCUNHO' || template.status === 'REVISAO'
@@ -121,19 +125,17 @@ export function TemplateDetailStudent({ user, template: initialTemplate }: Props
               }])}
             />
 
-            {/* Comments (read-only for student) */}
-            {comments.length > 0 && (
-              <div className="mt-6">
-                <CommentPanel
-                  comments={comments}
-                  templateId={template.id}
-                  currentUserId={user.id}
-                  canComment={false}
-                  onCommentAdded={c => setComments(prev => [c, ...prev])}
-                  onCommentDeleted={id => setComments(prev => prev.filter(c => c.id !== id))}
-                />
-              </div>
-            )}
+            {/* Comments — aluno can read AND reply to orientador/coordenação */}
+            <div className="mt-6">
+              <CommentPanel
+                comments={comments}
+                templateId={template.id}
+                currentUserId={user.id}
+                canComment={true}
+                onCommentAdded={c => setComments(prev => [c, ...prev])}
+                onCommentDeleted={id => setComments(prev => prev.filter(c => c.id !== id))}
+              />
+            </div>
           </div>
         </main>
       </div>

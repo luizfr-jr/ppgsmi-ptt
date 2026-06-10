@@ -7,6 +7,7 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { PWAInstallPrompt } from '@/components/layout/PWAInstallPrompt'
 import { FileText, Search, Eye, Users, UsersRound } from 'lucide-react'
 import { Template } from '@/types'
+import { NewCommentsBadge } from '@/components/template/NewCommentsBadge'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -156,6 +157,11 @@ export function CoordDashboard({ user, templates }: Props) {
                                 {template.comments?.length} comentário(s)
                               </span>
                             )}
+                            <NewCommentsBadge
+                              templateId={template.id}
+                              comments={(template as any).comments}
+                              currentUserId={user.id}
+                            />
                           </div>
                           <h3 className="font-semibold text-ninma-dark truncate">
                             {template.tituloPt || 'Sem título'}

@@ -9,6 +9,7 @@ import { PWAInstallPrompt } from '@/components/layout/PWAInstallPrompt'
 import { SetupModal, needsSetup } from '@/components/layout/SetupModal'
 import { Plus, FileText, Clock, CheckCircle, AlertCircle, Edit } from 'lucide-react'
 import { Template } from '@/types'
+import { NewCommentsBadge } from '@/components/template/NewCommentsBadge'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -118,11 +119,16 @@ export function StudentDashboard({ user, templates }: Props) {
                     <div key={template.id} className="card hover:shadow-md transition-shadow">
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className={`${status.className} flex items-center gap-1`}>
                               {status.icon}
                               {status.label}
                             </span>
+                            <NewCommentsBadge
+                              templateId={template.id}
+                              comments={(template as any).comments}
+                              currentUserId={currentUser.id}
+                            />
                           </div>
                           <h3 className="font-semibold text-ninma-dark truncate">
                             {template.tituloPt || 'Template sem título'}

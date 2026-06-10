@@ -304,3 +304,58 @@ export async function sendNewSignupNotification(params: {
     }),
   })
 }
+
+/** Novo comentário em um template → notifica os demais participantes */
+export async function sendNewCommentEmail(params: {
+  recipients: { email: string; role: string }[]  // everyone EXCEPT the author
+  authorName: string
+  authorRole: string
+  templateTitle: string
+  templateId: string
+  commentPreview: string
+  fieldRef?: string | null
+}) {
+  if (params.recipients.length === 0) return
+
+  const roleLabel = ROLE_LABELS[params.authorRole] || params.authorRole
+  const fieldLine = params.fieldRef
+    ? `<div style="font-size:11px;letter-spacing:1px;color:#756fb3;font-weight:700;margin-bottom:6px;">REFERENTE AO CAMPO ${params.fieldRef}</div>`
+    : ''
+  // Truncate long comments in the email — full text lives in the system
+  const preview = params.commentPreview.length > 280
+    ? params.commentPreview.slice(0, 280) + '…'
+    : params.commentPreview
+
+  // Each role lands on its own detail route
+  const routeFor = (role: string) =>
+    role === 'ALUNO' ? `${baseUrl()}/dashboard/template/${params.templateId}`
+    : role === 'ORIENTADOR' ? `${baseUrl()}/orientador/template/${params.templateId}`
+    : `${baseUrl()}/coordenacao/template/${params.templateId}`
+
+  // Group recipients by role so each group gets the right deep link
+  const byRole = new Map<string, string[]>()
+  for (const r of params.recipients) {
+    const key = routeFor(r.role)
+    byRole.set(key, [...(byRole.get(key) || []), r.email])
+  }
+
+  for (const [url, emails] of byRole) {
+    await sendMail({
+      to: emails,
+      subject: `Novo comentário no template — ${params.authorName}`,
+      html: renderShell({
+        title: 'Novo comentário no seu template',
+        intro: `
+          <p>Olá,</p>
+          <p><strong>${params.authorName}</strong> (${roleLabel}) comentou no template <em>"${params.templateTitle}"</em>:</p>
+          <div style="background:#edeaf4;border-left:3px solid #756fb3;padding:14px 18px;border-radius:6px;margin:18px 0;">
+            ${fieldLine}
+            <div style="font-size:14px;color:#1a1f3a;line-height:1.55;">${preview}</div>
+          </div>
+          <p>Acesse o sistema para ler o comentário completo e responder.</p>
+        `,
+        cta: url, ctaLabel: 'Ver comentário e responder',
+      }),
+    })
+  }
+}
