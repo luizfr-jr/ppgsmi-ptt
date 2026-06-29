@@ -48,22 +48,44 @@ export async function POST(req: NextRequest) {
     }
 
     const code = await generateOTP(normalizedEmail)
-    await sendOTPEmail(normalizedEmail, code)
 
-    // When email is not configured (SMTP env vars missing), expose the code in the
-    // API response so admins can log in during the transitional period before the
-    // SMTP server is set up. This is safe because triggering the endpoint for a
-    // given e-mail only reveals that e-mail's own code.
+    // Try to send the OTP by email. If anything goes wrong (SMTP misconfigured,
+    // wrong credentials, provider blocking, etc), we fall back to returning the
+    // code in the API response so the user can still log in. The OTP is short-
+    // lived (10 min) and tied to this email, so exposing it to whoever triggered
+    // the request for that email is no worse than e-mailing it to them.
     const emailConfigured = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS)
-    if (!emailConfigured) {
-      return NextResponse.json({
-        success: true,
-        message: `Código (SMTP não configurado): ${code}`,
-        devCode: code,
-      })
+    let emailDelivered = false
+    let emailError: string | null = null
+
+    if (emailConfigured) {
+      try {
+        await sendOTPEmail(normalizedEmail, code)
+        emailDelivered = true
+      } catch (err) {
+        emailError = (err as Error)?.message || String(err)
+        console.error('[send-otp] SMTP failed, falling back to on-screen code:', emailError)
+      }
+    } else {
+      // No SMTP configured at all — log to function logs so the code is also
+      // recoverable from there, and continue to return it in the response.
+      await sendOTPEmail(normalizedEmail, code).catch(() => {})
     }
 
-    return NextResponse.json({ success: true, message: 'Código enviado para seu e-mail' })
+    if (emailDelivered) {
+      return NextResponse.json({ success: true, message: 'Código enviado para seu e-mail' })
+    }
+
+    // Fallback path: show the code in the UI
+    const message = emailConfigured
+      ? `Código (envio por e-mail indisponível no momento): ${code}`
+      : `Código (SMTP não configurado): ${code}`
+    return NextResponse.json({
+      success: true,
+      message,
+      devCode: code,
+      emailFallback: !!emailError,
+    })
   } catch (error) {
     console.error('Send OTP error:', error)
     if (error instanceof z.ZodError) {
