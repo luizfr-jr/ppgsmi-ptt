@@ -91,9 +91,14 @@ export async function POST(req: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ success: false, error: 'E-mail inválido' }, { status: 400 })
     }
-    const msg = process.env.NODE_ENV === 'development'
-      ? `Erro: ${(error as Error)?.message || String(error)}`
-      : 'Erro ao enviar código'
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+    // Surface the real error message during the testing phase. This is a system
+    // not yet handling sensitive data, so exposing the underlying error helps
+    // operators diagnose Supabase / Prisma / network issues without trawling
+    // Vercel logs. Tighten this once the system goes to production.
+    const detail = (error as Error)?.message || String(error)
+    return NextResponse.json({
+      success: false,
+      error: `Erro interno ao gerar código: ${detail.slice(0, 200)}`,
+    }, { status: 500 })
   }
 }
