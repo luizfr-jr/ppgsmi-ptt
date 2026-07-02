@@ -90,8 +90,16 @@ const demandaLabels:  Record<string,string> = { ESPONTANEO:'Espontânea', CONCOR
 const objetivoLabels: Record<string,string> = { EXPERIMENTAL:'Experimental', SOLUCAO_PROBLEMA:'Solução de um problema previamente identificado', SEM_FOCO:'Sem um foco de aplicação inicialmente definido' }
 const tipoLabels:     Record<string,string> = { REAL:'Real', POTENCIAL:'Potencial' }
 const boolLabels:     Record<string,string> = { SIM:'Sim', NAO:'Não' }
+// Q15 (replicabilidade) uses its own labels — new templates save REPLICAVEL/
+// NAO_REPLICAVEL, but old templates still have SIM/NAO in the DB.
+const replicabilidadeLabels: Record<string,string> = {
+  REPLICAVEL:     'Replicável',
+  NAO_REPLICAVEL: 'Não replicável',
+  SIM:            'Replicável',      // legacy
+  NAO:            'Não replicável',  // legacy
+}
 const abrangLabels:   Record<string,string> = { INTERNACIONAL:'Internacional', NACIONAL:'Nacional', REGIONAL:'Regional', LOCAL:'Local' }
-const complexLabels:  Record<string,string> = { ALTA:'Alta', MEDIA:'Média', BAIXA:'Baixa' }
+const complexLabels:  Record<string,string> = { ALTA:'Alta complexidade', MEDIA:'Média complexidade', BAIXA:'Baixa complexidade' }
 const inovacaoLabels: Record<string,string> = { ALTO:'Alto teor inovativo', MEDIO:'Médio teor inovativo', BAIXO:'Baixo teor inovativo', SEM:'Sem Inovação' }
 const fomentosLabels: Record<string,string> = {
   FINANCIAMENTO:         'Financiamento',
@@ -552,7 +560,7 @@ function buildDocData(template: Template, attachments: Attachment[]): DocData {
     : []
 
   const charP1: FieldItem[] = [
-    { n:15, label:'Replicabilidade',          value: look(boolLabels,    template.replicabilidade) },
+    { n:15, label:'Replicabilidade',          value: look(replicabilidadeLabels, template.replicabilidade) },
     ...(template.replicabilidadeDesc ? [{ n:15, label:'Descrição da Replicabilidade', value: val(template.replicabilidadeDesc), sub:true }] : []),
     { n:16, label:'Abrangência territorial',  value: look(abrangLabels,  template.abrangencia) },
     { n:17, label:'Complexidade',             value: look(complexLabels, template.complexidade) },

@@ -690,8 +690,8 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
             onChange={v => update('impactoTipo', v)}
             disabled={readOnly}
             options={[
-              { value: 'REAL', label: 'Real', description: 'Ocorreram mudanças, social, econômica, educacional, na saúde e outras, resultantes do Produto Técnico-Tecnológico.' },
-              { value: 'POTENCIAL', label: 'Potencial', description: 'Ainda não foi possível identificar mudanças concretas resultantes do Produto Técnico-Tecnológico.' },
+              { value: 'REAL', label: 'Real', description: 'PTT provocou mudanças em um ou mais contextos: social, econômico, educacional, ambiental, saúde e/ou outra área.' },
+              { value: 'POTENCIAL', label: 'Potencial', description: 'PTT tem potencial para induzir mudanças a curto, médio ou longo prazo.' },
             ]}
           />
           <div className="mt-3">
@@ -715,16 +715,22 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
           Replicabilidade
         </div>
         <p className="text-xs text-gray-500 mb-3">
-          Facilidade com que se pode empregar o Produto Técnico-Tecnológico a fim de atingir seus objetivos específicos para os quais foi desenvolvida. Possível de ser replicada em diferentes ambientes e grupos sociais.
+          Refere-se à facilidade com que se pode empregar o PTT, a fim de atingir seus objetivos específicos para os quais foi desenvolvido.
         </p>
         <RadioGroup
           name="replicabilidade"
-          value={template.replicabilidade}
+          // Old values (SIM/NAO) are transparently mapped to the new ones for
+          // backwards compatibility with templates saved before the rename.
+          value={
+            template.replicabilidade === 'SIM' ? 'REPLICAVEL'
+            : template.replicabilidade === 'NAO' ? 'NAO_REPLICAVEL'
+            : template.replicabilidade
+          }
           onChange={v => update('replicabilidade', v)}
           disabled={readOnly}
           options={[
-            { value: 'SIM', label: 'Sim' },
-            { value: 'NAO', label: 'Não' },
+            { value: 'REPLICAVEL',     label: 'Replicável',     description: 'PTT passível de ser replicado em diferentes ambientes, públicos, grupos sociais ou linguagens.' },
+            { value: 'NAO_REPLICAVEL', label: 'Não replicável', description: 'PTT não é passível de replicabilidade.' },
           ]}
         />
         <div className="mt-3">
@@ -745,16 +751,19 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
           <span className="field-number">16</span>
           Abrangência territorial
         </div>
+        <p className="text-xs text-gray-500 mb-3">
+          Refere-se à extensão territorial abrangida pelo PTT. Para fins de pontuação, Internacional e Nacional são agrupadas; Regional e Local também.
+        </p>
         <RadioGroup
           name="abrangencia"
           value={template.abrangencia}
           onChange={v => update('abrangencia', v)}
           disabled={readOnly}
           options={[
-            { value: 'INTERNACIONAL', label: 'Internacional', description: 'Instituição em país diferente do Brasil.' },
-            { value: 'NACIONAL', label: 'Nacional', description: 'Uma ou mais instituição(ões) em diferentes estados do território nacional.' },
-            { value: 'REGIONAL', label: 'Regional', description: 'Uma ou mais instituição(ões) e/ou município(s) no mesmo estado.' },
-            { value: 'LOCAL', label: 'Local', description: 'Instituição ou município.' },
+            { value: 'INTERNACIONAL', label: 'Internacional', description: 'PTT com abrangência em país diferente do Brasil.' },
+            { value: 'NACIONAL',      label: 'Nacional',      description: 'PTT com abrangência em diferentes Estados do território nacional.' },
+            { value: 'REGIONAL',      label: 'Regional',      description: 'PTT possui abrangência em uma ou mais instituições e/ou municípios em diferentes municípios do mesmo estado.' },
+            { value: 'LOCAL',         label: 'Local',         description: 'PTT com abrangência em uma instituição ou município.' },
           ]}
         />
       </div>
@@ -766,7 +775,7 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
           Complexidade
         </div>
         <p className="text-xs italic text-gray-500 -mt-2 mb-3">
-          Obs: Refere-se ao grau de interação entre atores, relações e conhecimentos necessários à elaboração e ao desenvolvimento do Produto Técnico-Tecnológico.
+          Obs: Entende-se como uma propriedade associada à diversidade de atores, relações e conhecimentos necessários à elaboração e ao desenvolvimento do PTT.
         </p>
         <RadioGroup
           name="complexidade"
@@ -774,9 +783,9 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
           onChange={v => update('complexidade', v)}
           disabled={readOnly}
           options={[
-            { value: 'ALTA', label: 'Alta', description: 'Sinergia ou associação de diferentes áreas do conhecimento e interação de múltiplos atores, identificável nas etapas/passos e nas soluções geradas, associadas ao Produto Técnico-Tecnológico.' },
-            { value: 'MEDIA', label: 'Média', description: 'Combinação de conhecimentos pré-estabelecidos restrita à uma área do conhecimento e participação de poucos autores.' },
-            { value: 'BAIXA', label: 'Baixa', description: 'Alteração/adaptação de conhecimento existente e estabelecido sem a participação de diferentes atores.' },
+            { value: 'ALTA',  label: 'Alta complexidade',  description: 'PTT desenvolvido em associação com diferentes áreas do conhecimento e interação de múltiplos atores. Envolve a expertise de, no mínimo, 3 especialidades profissionais (Ex.: Enfermagem, Design e Informática).' },
+            { value: 'MEDIA', label: 'Média complexidade', description: 'PTT desenvolvido em associação com outras áreas do conhecimento e interação de múltiplos atores. Envolve a expertise de, no mínimo, 2 especialidades profissionais (Ex.: Enfermagem, Design e outras).' },
+            { value: 'BAIXA', label: 'Baixa complexidade', description: 'PTT desenvolvido sem, necessariamente, a participação de outros atores/especialidades profissionais.' },
           ]}
         />
         <div className="mt-3">
@@ -797,16 +806,19 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
           <span className="field-number">18</span>
           Inovação
         </div>
+        <p className="text-xs text-gray-500 mb-3">
+          Refere-se à ação ou ato de inovar, podendo ser uma modificação de algo já existente ou a criação de algo novo. Quanto ao grau de teor inovativo, pode ser classificada em:
+        </p>
         <RadioGroup
           name="inovacao"
           value={template.inovacao}
           onChange={v => update('inovacao', v)}
           disabled={readOnly}
           options={[
-            { value: 'ALTO', label: 'Alto teor inovativo', description: 'Desenvolvimento com base em conhecimento inédito.' },
-            { value: 'MEDIO', label: 'Médio teor inovativo', description: 'Combinação de conhecimento pré-estabelecidos.' },
-            { value: 'BAIXO', label: 'Baixo teor inovativo', description: 'Adaptação de conhecimento existente.' },
-            { value: 'SEM', label: 'Sem Inovação', description: 'Repetição de conhecimento já existente.' },
+            { value: 'ALTO',  label: 'Alto teor inovativo',  description: 'PTT pode ser considerado como tecnologicamente novo: produção cujas características tecnológicas ou usos pretendidos diferem daqueles dos produtos produzidos anteriormente. Tais inovações podem envolver tecnologias radicalmente novas, podem basear-se na combinação de tecnologias existentes em novos usos ou podem ser derivadas do uso de novo conhecimento.' },
+            { value: 'MEDIO', label: 'Médio teor inovativo', description: 'PTT pode ser considerado tecnologicamente aprimorado: produção existente cujo desempenho tenha sido significativamente aprimorado ou elevado. Produção simples que pode ser aprimorada (em termos de melhor desempenho ou menor custo) através de componentes ou materiais de desempenho melhor, ou uma produção complexa que consista em vários subsistemas técnicos integrados e aprimorados através de modificações parciais em um dos subsistemas.' },
+            { value: 'BAIXO', label: 'Baixo teor inovativo', description: 'PTT com grau de inovação muito pequeno.' },
+            { value: 'SEM',   label: 'Sem Inovação',         description: 'PTT sem inovação.' },
           ]}
         />
         <div className="mt-3">
