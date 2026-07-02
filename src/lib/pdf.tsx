@@ -483,13 +483,17 @@ function Field({ item }: { item: FieldItem }) {
       </View>
     </View>
   )
-  // Outer View must NOT wrap=false — long values should be allowed to flow to the next page.
-  // Instead, group the number box + label as an inseparable "minipresenter" using minPresenceAhead.
+  // Keep the number box + label + value glued together whenever possible.
+  //   • List fields (like Q19 sectors) are always compact — never split.
+  //   • Non-list fields can be very long (Q8 Relevância etc.), so we allow
+  //     wrapping but require enough space ahead so the number + label + at
+  //     least the first line of the value show up together.
+  const isCompact = !!item.list
   return (
-    <View style={s.field}>
-      <View style={s.fieldNBox} minPresenceAhead={20}><Text style={s.fieldNText}>{String(item.n).padStart(2,'0')}</Text></View>
+    <View style={s.field} wrap={!isCompact} minPresenceAhead={80}>
+      <View style={s.fieldNBox}><Text style={s.fieldNText}>{String(item.n).padStart(2,'0')}</Text></View>
       <View style={s.fieldBody}>
-        <Text style={s.fieldLabel} minPresenceAhead={30}>{item.label.toUpperCase()}</Text>
+        <Text style={s.fieldLabel}>{item.label.toUpperCase()}</Text>
         {item.list && Array.isArray(item.value)
           ? <View>{item.value.map((v,i) => <Text key={i} style={s.fieldListItem}>{v}</Text>)}</View>
           : empty
