@@ -388,8 +388,15 @@ function RichText({ text, style }: { text: string; style: any }) {
   }
   if (last < text.length) parts.push({ txt: text.slice(last), isUrl: false })
   if (!parts.some(p => p.isUrl)) return <Text style={style}>{text}</Text>
+
+  // Override justify → left when the field contains URLs. Justified text
+  // stretches word spacing to fill each line, and long unbreakable URLs on the
+  // next line cause the previous "short" text line to look weird (huge gaps
+  // between "no", "site", "da", "Universidade", "Franciscana:"). Left-align
+  // avoids the artifact while keeping justify for pure-paragraph fields.
+  const leftAlignedStyle = { ...style, textAlign: 'left' as const }
   return (
-    <Text style={style}>
+    <Text style={leftAlignedStyle}>
       {parts.map((p, i) =>
         p.isUrl
           ? <Link key={i} src={p.txt}><Text style={{ color: C.purple, textDecoration: 'underline' }}>{breakableUrl(p.txt)}</Text></Link>
