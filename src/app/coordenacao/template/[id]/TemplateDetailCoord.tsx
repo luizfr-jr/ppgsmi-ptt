@@ -68,11 +68,25 @@ export function TemplateDetailCoord({ user, template: initialTemplate }: Props) 
               className="mb-6"
             />
 
-            {/* Read-only content, but coord can change status */}
+            {/* SUPERADMIN has full edit access to fix approved templates
+                when necessary; COORDENACAO stays read-only for content. */}
+            {user.role === 'SUPERADMIN' && (
+              <div className="card mb-4 border-2 border-ninma-orange bg-ninma-orange-light/40">
+                <div className="flex items-start gap-3">
+                  <span className="text-xl leading-none">⚠️</span>
+                  <div className="flex-1 text-sm">
+                    <div className="font-bold text-ninma-orange-dark">Modo edição de super admin ativo</div>
+                    <div className="text-gray-700 mt-0.5">
+                      Você pode alterar qualquer campo do template, inclusive em templates já aprovados. Alterações são registradas automaticamente.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             <TemplateForm
               template={template}
               attachments={initialTemplate.attachments}
-              readOnly={true}
+              readOnly={user.role !== 'SUPERADMIN'}
               canChangeStatus={true}
               userRole={user.role as 'COORDENACAO' | 'SUPERADMIN'}
               currentUser={user}
