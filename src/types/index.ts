@@ -28,7 +28,9 @@ export interface Template {
   createdAt: Date
   updatedAt: Date
   aluno: string | null
+  alunoGenero: string | null
   orientador: string | null
+  orientadorGenero: string | null
   coorientador: string | null
   bancaAvaliadora: string | null
   data: string | null

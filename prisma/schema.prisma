@@ -59,11 +59,13 @@ model Template {
   updatedAt DateTime @updatedAt
 
   // Cover page
-  aluno           String?
-  orientador      String?
-  coorientador    String?
-  bancaAvaliadora String?
-  data            String?
+  aluno            String?
+  alunoGenero      String?  // M | F — flexiona o rótulo Aluno/Aluna na capa
+  orientador       String?
+  orientadorGenero String?  // M | F — flexiona Orientador/Orientadora + Prof. Dr./Profa. Dra.
+  coorientador     String?
+  bancaAvaliadora  String?
+  data             String?
 
   // Field 1
   tituloPt        String?

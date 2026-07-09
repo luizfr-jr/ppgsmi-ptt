@@ -372,26 +372,84 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="label">Aluno</label>
+            <label className="label">Aluno(a)</label>
             <input
               type="text"
               className="input"
-              placeholder="Nome completo do aluno"
+              placeholder="Nome completo do(a) aluno(a)"
               value={template.aluno || ''}
               onChange={e => update('aluno', e.target.value)}
               disabled={readOnly}
             />
+            <div className="mt-2">
+              <span className="text-xs text-gray-500 mb-1 block">Como identificar na capa?</span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={readOnly}
+                  onClick={() => update('alunoGenero', 'M')}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-sm border transition-all ${
+                    (template.alunoGenero || 'M') === 'M'
+                      ? 'bg-ninma-teal text-white border-ninma-teal'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-ninma-teal'
+                  }`}
+                >
+                  Aluno
+                </button>
+                <button
+                  type="button"
+                  disabled={readOnly}
+                  onClick={() => update('alunoGenero', 'F')}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-sm border transition-all ${
+                    template.alunoGenero === 'F'
+                      ? 'bg-ninma-teal text-white border-ninma-teal'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-ninma-teal'
+                  }`}
+                >
+                  Aluna
+                </button>
+              </div>
+            </div>
           </div>
           <div>
-            <label className="label">Orientador</label>
+            <label className="label">Orientador(a)</label>
             <input
               type="text"
               className="input"
-              placeholder="Nome completo do orientador"
+              placeholder="Nome completo (sem 'Prof. Dr.' — adicionado automaticamente)"
               value={template.orientador || ''}
               onChange={e => update('orientador', e.target.value)}
               disabled={readOnly}
             />
+            <div className="mt-2">
+              <span className="text-xs text-gray-500 mb-1 block">Tratamento na capa?</span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={readOnly}
+                  onClick={() => update('orientadorGenero', 'M')}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-sm border transition-all ${
+                    (template.orientadorGenero || 'M') === 'M'
+                      ? 'bg-ninma-purple text-white border-ninma-purple'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-ninma-purple'
+                  }`}
+                >
+                  Prof. Dr.
+                </button>
+                <button
+                  type="button"
+                  disabled={readOnly}
+                  onClick={() => update('orientadorGenero', 'F')}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-sm border transition-all ${
+                    template.orientadorGenero === 'F'
+                      ? 'bg-ninma-purple text-white border-ninma-purple'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-ninma-purple'
+                  }`}
+                >
+                  Profa. Dra.
+                </button>
+              </div>
+            </div>
           </div>
           <div>
             <label className="label">Coorientador <span className="text-gray-400 text-xs font-normal">(opcional)</span></label>
