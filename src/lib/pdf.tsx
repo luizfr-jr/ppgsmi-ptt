@@ -274,7 +274,10 @@ const s = StyleSheet.create({
   impactAccentBar: { height: 3, borderRadius: 2, marginBottom: 8 },
   impactCardN:     { fontSize: 7.5, color: C.muted, marginBottom: 5 },
   impactCardLbl:   { fontSize: 7, letterSpacing: 1.2, color: C.muted, fontWeight: 700, marginBottom: 7, lineHeight: 1.3 },
-  impactCardVal:   { fontSize: 12, fontWeight: 700, color: C.ink, lineHeight: 1.2 },
+  // fontSize reduced 12 → 10 so long single words (e.g. "Aprendizagem",
+  // "concorrência") fit inside the narrow 5-column impact cards without
+  // overflowing horizontally.
+  impactCardVal:   { fontSize: 10, fontWeight: 700, color: C.ink, lineHeight: 1.25 },
   impactDesc: {
     paddingHorizontal: 16, paddingVertical: 12,
     backgroundColor: C.purpleSoft, borderRadius: 9,
