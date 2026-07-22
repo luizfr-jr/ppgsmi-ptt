@@ -501,14 +501,13 @@ function Field({ item }: { item: FieldItem }) {
       </View>
     </View>
   )
-  // Keep the number box + label + value glued together whenever possible.
-  //   • List fields (like Q19 sectors) are always compact — never split.
-  //   • Non-list fields can be very long (Q8 Relevância etc.), so we allow
-  //     wrapping but require enough space ahead so the number + label + at
-  //     least the first line of the value show up together.
-  const isCompact = !!item.list
+  // Keep the whole field (number box + label + value) together on one page.
+  // wrap={false} makes react-pdf move the entire field to the next page when
+  // it doesn't fit, instead of splitting it — which previously left the number
+  // box orphaned at the bottom of a page (Q07, Q19). PTT field values always
+  // fit within a single page, so nothing gets clipped.
   return (
-    <View style={s.field} wrap={!isCompact} minPresenceAhead={80}>
+    <View style={s.field} wrap={false}>
       <View style={s.fieldNBox}><Text style={s.fieldNText}>{String(item.n).padStart(2,'0')}</Text></View>
       <View style={s.fieldBody}>
         <Text style={s.fieldLabel}>{item.label.toUpperCase()}</Text>
