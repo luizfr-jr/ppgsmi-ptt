@@ -246,15 +246,13 @@ const s = StyleSheet.create({
   secH2: { fontFamily: 'SourceSerif4', fontSize: 17, fontWeight: 700, color: C.ink },
 
   // ── Fields ──
-  // A field is split into a header row (number box + label) and an indented
-  // value block. The header has wrap={false} so it never splits; the value can
-  // wrap freely across pages. This keeps the number glued to the label without
-  // the absolute-positioning artifacts (a stray number box on the prior page).
+  // Original layout: number box on the left, label+value stacked on the right,
+  // value sitting right below its label. Page-break safety comes purely from
+  // minPresenceAhead on the field (in the component) — it doesn't change the
+  // visual, only decides whether a field starts on this page or the next.
   fields: { gap: 14 },
-  field:    {},
-  fieldSub: {},
-  fieldHeader:    { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginBottom: 4 },
-  fieldValueWrap: { paddingLeft: 42 },
+  field:    { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  fieldSub: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   fieldNBox: {
     width: 30, height: 30, backgroundColor: C.purpleSoft, borderRadius: 7,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
@@ -495,14 +493,14 @@ interface FieldItem { n: number; label: string; value: string|string[]; sub?: bo
 
 function Field({ item }: { item: FieldItem }) {
   const empty = !item.value || item.value === '—' || (Array.isArray(item.value) && item.value.length === 0)
+  // minPresenceAhead pushes the whole field to the next page when there isn't
+  // room for the number + label + first lines — preventing an orphaned number
+  // box at the bottom of a page — without altering the on-page visual layout.
   if (item.sub) return (
-    <View style={s.fieldSub} minPresenceAhead={50}>
-      {/* Header (arrow + label) never splits; value block flows freely below */}
-      <View style={s.fieldHeader} wrap={false}>
-        <View style={s.fieldSubArrow}><Text style={s.fieldSubArrowText}>↳</Text></View>
-        <Text style={[s.fieldSubLabel, { flex: 1 }]}>{item.label}</Text>
-      </View>
-      <View style={s.fieldValueWrap}>
+    <View style={s.fieldSub} minPresenceAhead={60}>
+      <View style={s.fieldSubArrow}><Text style={s.fieldSubArrowText}>↳</Text></View>
+      <View style={s.fieldBody}>
+        <Text style={s.fieldSubLabel}>{item.label}</Text>
         {empty
           ? <Text style={s.fieldEmpty}>—</Text>
           : <RichText text={String(item.value)} style={s.fieldValue} />
@@ -510,17 +508,11 @@ function Field({ item }: { item: FieldItem }) {
       </View>
     </View>
   )
-  // Header row (number box + label) has wrap={false} so it never splits and the
-  // number stays with its label. The value block is indented and can wrap onto
-  // the next page. minPresenceAhead pushes the whole field down when there
-  // isn't room for the header + first lines, so nothing is orphaned or overlaps.
   return (
-    <View style={s.field} minPresenceAhead={50}>
-      <View style={s.fieldHeader} wrap={false}>
-        <View style={s.fieldNBox}><Text style={s.fieldNText}>{String(item.n).padStart(2,'0')}</Text></View>
-        <Text style={[s.fieldLabel, { flex: 1, marginBottom: 0 }]}>{item.label.toUpperCase()}</Text>
-      </View>
-      <View style={s.fieldValueWrap}>
+    <View style={s.field} minPresenceAhead={60}>
+      <View style={s.fieldNBox}><Text style={s.fieldNText}>{String(item.n).padStart(2,'0')}</Text></View>
+      <View style={s.fieldBody}>
+        <Text style={s.fieldLabel}>{item.label.toUpperCase()}</Text>
         {item.list && Array.isArray(item.value)
           ? <View>{item.value.map((v,i) => <Text key={i} style={s.fieldListItem}>{v}</Text>)}</View>
           : empty
