@@ -246,17 +246,22 @@ const s = StyleSheet.create({
   secH2: { fontFamily: 'SourceSerif4', fontSize: 17, fontWeight: 700, color: C.ink },
 
   // ── Fields ──
+  // The number box is absolutely positioned at the top-left of each field and
+  // the body is indented with paddingLeft. This lets a long value wrap across
+  // pages while the number box stays glued to the label at the top — it can't
+  // be orphaned at the bottom of a page (the old flex-row layout allowed that).
   fields: { gap: 14 },
-  field:    { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  fieldSub: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  field:    { position: 'relative', paddingLeft: 42, minHeight: 30 },
+  fieldSub: { position: 'relative', paddingLeft: 42, minHeight: 30 },
   fieldNBox: {
+    position: 'absolute', left: 0, top: 0,
     width: 30, height: 30, backgroundColor: C.purpleSoft, borderRadius: 7,
-    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    alignItems: 'center', justifyContent: 'center',
   },
   fieldNText:    { fontSize: 9.5, fontWeight: 700, color: C.purple },
-  fieldSubArrow: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  fieldSubArrow: { position: 'absolute', left: 0, top: 0, width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   fieldSubArrowText: { fontSize: 12, color: C.muted },
-  fieldBody:     { flex: 1 },
+  fieldBody:     {},
   fieldLabel:    { fontSize: 9.5, fontWeight: 700, letterSpacing: 0.6, color: C.purple, marginBottom: 4 },
   fieldSubLabel: { fontSize: 9.5, fontStyle: 'italic', fontWeight: 500, color: C.inkSoft, marginBottom: 3 },
   fieldValue:    { fontSize: 11, lineHeight: 1.6, color: C.ink, textAlign: 'justify' },
@@ -490,7 +495,7 @@ interface FieldItem { n: number; label: string; value: string|string[]; sub?: bo
 function Field({ item }: { item: FieldItem }) {
   const empty = !item.value || item.value === '—' || (Array.isArray(item.value) && item.value.length === 0)
   if (item.sub) return (
-    <View style={s.fieldSub} wrap={false}>
+    <View style={s.fieldSub} minPresenceAhead={50}>
       <View style={s.fieldSubArrow}><Text style={s.fieldSubArrowText}>↳</Text></View>
       <View style={s.fieldBody}>
         <Text style={s.fieldSubLabel}>{item.label}</Text>
@@ -501,13 +506,13 @@ function Field({ item }: { item: FieldItem }) {
       </View>
     </View>
   )
-  // Keep the whole field (number box + label + value) together on one page.
-  // wrap={false} makes react-pdf move the entire field to the next page when
-  // it doesn't fit, instead of splitting it — which previously left the number
-  // box orphaned at the bottom of a page (Q07, Q19). PTT field values always
-  // fit within a single page, so nothing gets clipped.
+  // The number box is absolutely positioned (see styles), so it stays glued to
+  // the label at the top even when a long value wraps across a page break.
+  // minPresenceAhead pushes the whole field to the next page if there isn't
+  // room for at least the header + a couple of lines — so no orphaned number
+  // box, and long paragraphs (Q07, Q08) can still flow onto the next page.
   return (
-    <View style={s.field} wrap={false}>
+    <View style={s.field} minPresenceAhead={50}>
       <View style={s.fieldNBox}><Text style={s.fieldNText}>{String(item.n).padStart(2,'0')}</Text></View>
       <View style={s.fieldBody}>
         <Text style={s.fieldLabel}>{item.label.toUpperCase()}</Text>
