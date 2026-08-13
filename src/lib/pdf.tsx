@@ -246,22 +246,23 @@ const s = StyleSheet.create({
   secH2: { fontFamily: 'SourceSerif4', fontSize: 17, fontWeight: 700, color: C.ink },
 
   // ── Fields ──
-  // The number box is absolutely positioned at the top-left of each field and
-  // the body is indented with paddingLeft. This lets a long value wrap across
-  // pages while the number box stays glued to the label at the top — it can't
-  // be orphaned at the bottom of a page (the old flex-row layout allowed that).
+  // A field is split into a header row (number box + label) and an indented
+  // value block. The header has wrap={false} so it never splits; the value can
+  // wrap freely across pages. This keeps the number glued to the label without
+  // the absolute-positioning artifacts (a stray number box on the prior page).
   fields: { gap: 14 },
-  field:    { position: 'relative', paddingLeft: 42, minHeight: 30 },
-  fieldSub: { position: 'relative', paddingLeft: 42, minHeight: 30 },
+  field:    {},
+  fieldSub: {},
+  fieldHeader:    { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginBottom: 4 },
+  fieldValueWrap: { paddingLeft: 42 },
   fieldNBox: {
-    position: 'absolute', left: 0, top: 0,
     width: 30, height: 30, backgroundColor: C.purpleSoft, borderRadius: 7,
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
   fieldNText:    { fontSize: 9.5, fontWeight: 700, color: C.purple },
-  fieldSubArrow: { position: 'absolute', left: 0, top: 0, width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
+  fieldSubArrow: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   fieldSubArrowText: { fontSize: 12, color: C.muted },
-  fieldBody:     {},
+  fieldBody:     { flex: 1 },
   fieldLabel:    { fontSize: 9.5, fontWeight: 700, letterSpacing: 0.6, color: C.purple, marginBottom: 4 },
   fieldSubLabel: { fontSize: 9.5, fontStyle: 'italic', fontWeight: 500, color: C.inkSoft, marginBottom: 3 },
   fieldValue:    { fontSize: 11, lineHeight: 1.6, color: C.ink, textAlign: 'justify' },
@@ -496,9 +497,12 @@ function Field({ item }: { item: FieldItem }) {
   const empty = !item.value || item.value === '—' || (Array.isArray(item.value) && item.value.length === 0)
   if (item.sub) return (
     <View style={s.fieldSub} minPresenceAhead={50}>
-      <View style={s.fieldSubArrow}><Text style={s.fieldSubArrowText}>↳</Text></View>
-      <View style={s.fieldBody}>
-        <Text style={s.fieldSubLabel}>{item.label}</Text>
+      {/* Header (arrow + label) never splits; value block flows freely below */}
+      <View style={s.fieldHeader} wrap={false}>
+        <View style={s.fieldSubArrow}><Text style={s.fieldSubArrowText}>↳</Text></View>
+        <Text style={[s.fieldSubLabel, { flex: 1 }]}>{item.label}</Text>
+      </View>
+      <View style={s.fieldValueWrap}>
         {empty
           ? <Text style={s.fieldEmpty}>—</Text>
           : <RichText text={String(item.value)} style={s.fieldValue} />
@@ -506,16 +510,17 @@ function Field({ item }: { item: FieldItem }) {
       </View>
     </View>
   )
-  // The number box is absolutely positioned (see styles), so it stays glued to
-  // the label at the top even when a long value wraps across a page break.
-  // minPresenceAhead pushes the whole field to the next page if there isn't
-  // room for at least the header + a couple of lines — so no orphaned number
-  // box, and long paragraphs (Q07, Q08) can still flow onto the next page.
+  // Header row (number box + label) has wrap={false} so it never splits and the
+  // number stays with its label. The value block is indented and can wrap onto
+  // the next page. minPresenceAhead pushes the whole field down when there
+  // isn't room for the header + first lines, so nothing is orphaned or overlaps.
   return (
     <View style={s.field} minPresenceAhead={50}>
-      <View style={s.fieldNBox}><Text style={s.fieldNText}>{String(item.n).padStart(2,'0')}</Text></View>
-      <View style={s.fieldBody}>
-        <Text style={s.fieldLabel}>{item.label.toUpperCase()}</Text>
+      <View style={s.fieldHeader} wrap={false}>
+        <View style={s.fieldNBox}><Text style={s.fieldNText}>{String(item.n).padStart(2,'0')}</Text></View>
+        <Text style={[s.fieldLabel, { flex: 1, marginBottom: 0 }]}>{item.label.toUpperCase()}</Text>
+      </View>
+      <View style={s.fieldValueWrap}>
         {item.list && Array.isArray(item.value)
           ? <View>{item.value.map((v,i) => <Text key={i} style={s.fieldListItem}>{v}</Text>)}</View>
           : empty
