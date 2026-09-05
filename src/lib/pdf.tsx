@@ -547,7 +547,7 @@ function Field({ item }: { item: FieldItem }) {
 // ─── Data mapping ─────────────────────────────────────────────────────────
 interface DocData {
   meta:   { date: string; docId: string; dateShort: string; year: string }
-  cover:  { aluno: string; alunoLabel: string; orientador: string; orientadorLabel: string; coorientador: string; bancaMembers: { name: string; inst: string }[]; data: string }
+  cover:  { aluno: string; alunoLabel: string; orientador: string; orientadorLabel: string; coorientador: string; coorientadorLabel: string; bancaMembers: { name: string; inst: string }[]; data: string }
   prodP1: FieldItem[]; prodP2: FieldItem[]
   impact: { cards: FieldItem[]; descs: FieldItem[] }
   charP1: FieldItem[]; charP2: FieldItem[]
@@ -641,6 +641,7 @@ function buildDocData(template: Template, attachments: Attachment[]): DocData {
   const coorientador = (coorientadorNome && !coorHasTitle)
     ? coorPrefix + coorientadorNome
     : coorientadorNome
+  const coorientadorLabel = template.coorientadorGenero === 'F' ? 'COORIENTADORA' : 'COORIENTADOR'
 
   // Gender-aware labels for the cover. Default is masculine (matches legacy
   // templates created before the gender fields existed).
@@ -657,7 +658,7 @@ function buildDocData(template: Template, attachments: Attachment[]): DocData {
 
   return {
     meta:   { date: fmtLong(isoDate), docId: makeDocId(isoDate), dateShort: fmtShort(isoDate), year },
-    cover:  { aluno: val(template.aluno), alunoLabel, orientador: orientadorComTitulo, orientadorLabel, coorientador, bancaMembers, data: isoDate },
+    cover:  { aluno: val(template.aluno), alunoLabel, orientador: orientadorComTitulo, orientadorLabel, coorientador, coorientadorLabel, bancaMembers, data: isoDate },
     prodP1: prodFields.filter(f=>f.n<=5),
     prodP2: prodFields.filter(f=>f.n>=6&&f.n<=9),
     impact: { cards: impactCards, descs: impactDescs },
@@ -730,7 +731,7 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
                 <View style={s.coverField}>
                   <View style={s.coverFieldLbl}>
                     <View style={[s.coverDot, { backgroundColor: C.coral }]} />
-                    <Text>COORIENTADOR(A)</Text>
+                    <Text>{cover.coorientadorLabel}</Text>
                   </View>
                   <Text style={s.coverFieldVal}>{cover.coorientador}</Text>
                 </View>
