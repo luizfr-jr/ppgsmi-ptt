@@ -183,7 +183,7 @@ const s = StyleSheet.create({
     flexDirection: 'row', flexWrap: 'wrap',
     borderWidth: 1, borderColor: C.rule, borderRadius: 12,
     paddingHorizontal: 28, paddingVertical: 24,
-    backgroundColor: C.paper, maxWidth: 520,
+    backgroundColor: C.paper, maxWidth: 540,
     gap: 18,
   },
   coverField:     { width: '46%', paddingRight: 8 },
@@ -192,6 +192,11 @@ const s = StyleSheet.create({
   coverDot:       { width: 4, height: 4, borderRadius: 99 },
   coverFieldVal:  { fontSize: 11.5, fontWeight: 600, color: C.ink, lineHeight: 1.35 },
   coverFieldValList: { fontSize: 11, fontWeight: 500, color: C.ink, lineHeight: 1.5 },
+  // Banca — 2-column grid so a long list uses the width instead of one tall column
+  bancaGrid:   { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
+  bancaMember: { width: '46%', marginBottom: 6 },
+  bancaName:   { fontSize: 10.5, fontWeight: 600, color: C.ink, lineHeight: 1.3 },
+  bancaInst:   { fontSize: 9, fontWeight: 400, color: C.muted, lineHeight: 1.3, marginTop: 1 },
 
   coverFoot: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -542,7 +547,7 @@ function Field({ item }: { item: FieldItem }) {
 // ─── Data mapping ─────────────────────────────────────────────────────────
 interface DocData {
   meta:   { date: string; docId: string; dateShort: string; year: string }
-  cover:  { aluno: string; alunoLabel: string; orientador: string; orientadorLabel: string; banca: string[]; data: string }
+  cover:  { aluno: string; alunoLabel: string; orientador: string; orientadorLabel: string; coorientador: string; bancaMembers: { name: string; inst: string }[]; data: string }
   prodP1: FieldItem[]; prodP2: FieldItem[]
   impact: { cards: FieldItem[]; descs: FieldItem[] }
   charP1: FieldItem[]; charP2: FieldItem[]
@@ -611,8 +616,26 @@ function buildDocData(template: Template, attachments: Attachment[]): DocData {
   }))
 
   const bancaRaw = template.bancaAvaliadora || ''
-  const banca = bancaRaw.trim() ? bancaRaw.split('\n').map(l=>l.trim()).filter(Boolean) : ['—']
+  const bancaLines = bancaRaw.trim() ? bancaRaw.split('\n').map(l=>l.trim()).filter(Boolean) : []
+  // Group the free-text lines into members. Convention (and the Word template):
+  // each member is a name line (starting with Prof./Dr./Dra.) optionally
+  // followed by one or more institution lines. When a member has no title
+  // prefix, the first line is treated as the name and the rest as institution.
+  const bancaMembers: { name: string; inst: string }[] = []
+  for (const line of bancaLines) {
+    const startsNew = /^(prof|profa|dr|dra)\.?\b/i.test(line) || bancaMembers.length === 0
+    if (startsNew) {
+      bancaMembers.push({ name: line, inst: '' })
+    } else {
+      const last = bancaMembers[bancaMembers.length - 1]
+      last.inst = last.inst ? `${last.inst} · ${line}` : line
+    }
+  }
   const year = isoDate.split('-')[0] || '2026'
+
+  // Coorientador — optional; shown exactly as typed (no gender field for it,
+  // so we don't force a "Prof(a). Dr(a)." prefix that would look awkward).
+  const coorientador = (template.coorientador || '').trim()
 
   // Gender-aware labels for the cover. Default is masculine (matches legacy
   // templates created before the gender fields existed).
@@ -629,7 +652,7 @@ function buildDocData(template: Template, attachments: Attachment[]): DocData {
 
   return {
     meta:   { date: fmtLong(isoDate), docId: makeDocId(isoDate), dateShort: fmtShort(isoDate), year },
-    cover:  { aluno: val(template.aluno), alunoLabel, orientador: orientadorComTitulo, orientadorLabel, banca, data: isoDate },
+    cover:  { aluno: val(template.aluno), alunoLabel, orientador: orientadorComTitulo, orientadorLabel, coorientador, bancaMembers, data: isoDate },
     prodP1: prodFields.filter(f=>f.n<=5),
     prodP2: prodFields.filter(f=>f.n>=6&&f.n<=9),
     impact: { cards: impactCards, descs: impactDescs },
@@ -697,14 +720,33 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
                 </View>
                 <Text style={s.coverFieldVal}>{cover.orientador}</Text>
               </View>
-              {/* Banca */}
-              <View style={s.coverFieldFull}>
-                <View style={s.coverFieldLbl}>
-                  <View style={[s.coverDot, { backgroundColor: C.purple }]} />
-                  <Text>BANCA AVALIADORA</Text>
+              {/* Coorientador(a) — só aparece se preenchido */}
+              {cover.coorientador ? (
+                <View style={s.coverField}>
+                  <View style={s.coverFieldLbl}>
+                    <View style={[s.coverDot, { backgroundColor: C.coral }]} />
+                    <Text>COORIENTADOR(A)</Text>
+                  </View>
+                  <Text style={s.coverFieldVal}>{cover.coorientador}</Text>
                 </View>
-                {cover.banca.map((b,i) => <Text key={i} style={s.coverFieldValList}>{b}</Text>)}
-              </View>
+              ) : null}
+              {/* Banca — 2 colunas, nome destacado + instituição suave */}
+              {cover.bancaMembers.length > 0 ? (
+                <View style={s.coverFieldFull}>
+                  <View style={s.coverFieldLbl}>
+                    <View style={[s.coverDot, { backgroundColor: C.purple }]} />
+                    <Text>BANCA AVALIADORA</Text>
+                  </View>
+                  <View style={s.bancaGrid}>
+                    {cover.bancaMembers.map((m,i) => (
+                      <View key={i} style={s.bancaMember}>
+                        <Text style={s.bancaName}>{m.name}</Text>
+                        {m.inst ? <Text style={s.bancaInst}>{m.inst}</Text> : null}
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
               {/* Data */}
               <View style={s.coverFieldFull}>
                 <View style={s.coverFieldLbl}>
