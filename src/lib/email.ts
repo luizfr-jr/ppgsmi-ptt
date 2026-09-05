@@ -6,9 +6,14 @@ const emailConfigured = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS)
 const transporter = nodemailer.createTransport(
   emailConfigured
     ? ({
-        host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+        host: process.env.EMAIL_HOST || 'smtp.office365.com',
         port: parseInt(process.env.EMAIL_PORT || '587'),
         secure: false,
+        requireTLS: true,
+        tls: { minVersion: 'TLSv1.2' },
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 30000,
         auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
       } as nodemailer.TransportOptions)
     : ({ jsonTransport: true } as nodemailer.TransportOptions)
@@ -24,11 +29,12 @@ function logCodeToTerminal(email: string, code: string) {
 }
 
 export async function sendOTPEmail(email: string, code: string) {
-  // Always log the code to Vercel function logs as a backup (safe fallback)
-  logCodeToTerminal(email, code)
-
   if (!emailConfigured) {
-    return
+    if (isDev) {
+      logCodeToTerminal(email, code)
+      return
+    }
+    throw new Error('SMTP não configurado')
   }
   const html = `
     <!DOCTYPE html>
@@ -82,11 +88,6 @@ export async function sendOTPEmail(email: string, code: string) {
       html,
     })
   } catch (smtpError) {
-    console.error('SMTP falhou (código disponível nos logs acima):', smtpError)
-    if (isDev) {
-      // already logged above, just swallow
-      return
-    }
     throw smtpError
   }
 }

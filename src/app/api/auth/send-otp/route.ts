@@ -49,56 +49,28 @@ export async function POST(req: NextRequest) {
 
     const code = await generateOTP(normalizedEmail)
 
-    // Try to send the OTP by email. If anything goes wrong (SMTP misconfigured,
-    // wrong credentials, provider blocking, etc), we fall back to returning the
-    // code in the API response so the user can still log in. The OTP is short-
-    // lived (10 min) and tied to this email, so exposing it to whoever triggered
-    // the request for that email is no worse than e-mailing it to them.
+    // On-screen codes are only allowed during local development without SMTP.
     const emailConfigured = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS)
-    let emailDelivered = false
-    let emailError: string | null = null
-
-    if (emailConfigured) {
-      try {
-        await sendOTPEmail(normalizedEmail, code)
-        emailDelivered = true
-      } catch (err) {
-        emailError = (err as Error)?.message || String(err)
-        console.error('[send-otp] SMTP failed, falling back to on-screen code:', emailError)
-      }
-    } else {
-      // No SMTP configured at all — log to function logs so the code is also
-      // recoverable from there, and continue to return it in the response.
-      await sendOTPEmail(normalizedEmail, code).catch(() => {})
+    if (process.env.NODE_ENV === 'development' && !emailConfigured) {
+      await sendOTPEmail(normalizedEmail, code)
+      return NextResponse.json({ success: true, devCode: code, message: 'Código de desenvolvimento local' })
     }
-
-    if (emailDelivered) {
-      return NextResponse.json({ success: true, message: 'Código enviado para seu e-mail' })
+    try {
+      await sendOTPEmail(normalizedEmail, code)
+    } catch (err) {
+      const smtp = err as { code?: string; responseCode?: number }
+      console.error('[send-otp] SMTP indisponível', { code: smtp.code, responseCode: smtp.responseCode })
+      return NextResponse.json({ success: false, error: 'Não foi possível enviar o código por e-mail. Tente novamente em instantes ou entre em contato com a coordenação.' }, { status: 503 })
     }
-
-    // Fallback path: show the code in the UI
-    const message = emailConfigured
-      ? `Código (envio por e-mail indisponível no momento): ${code}`
-      : `Código (SMTP não configurado): ${code}`
-    return NextResponse.json({
-      success: true,
-      message,
-      devCode: code,
-      emailFallback: !!emailError,
-    })
+    return NextResponse.json({ success: true, message: 'Código enviado para seu e-mail' })
   } catch (error) {
-    console.error('Send OTP error:', error)
+    console.error('Send OTP error:', { name: error instanceof Error ? error.name : 'UnknownError' })
     if (error instanceof z.ZodError) {
       return NextResponse.json({ success: false, error: 'E-mail inválido' }, { status: 400 })
     }
-    // Surface the real error message during the testing phase. This is a system
-    // not yet handling sensitive data, so exposing the underlying error helps
-    // operators diagnose Supabase / Prisma / network issues without trawling
-    // Vercel logs. Tighten this once the system goes to production.
-    const detail = (error as Error)?.message || String(error)
     return NextResponse.json({
       success: false,
-      error: `Erro interno ao gerar código: ${detail.slice(0, 200)}`,
+      error: 'Não foi possível gerar o código de acesso. Tente novamente em instantes.',
     }, { status: 500 })
   }
 }
