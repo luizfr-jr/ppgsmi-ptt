@@ -32,6 +32,7 @@ export interface Template {
   orientador: string | null
   orientadorGenero: string | null
   coorientador: string | null
+  coorientadorGenero: string | null
   bancaAvaliadora: string | null
   data: string | null
   tituloPt: string | null

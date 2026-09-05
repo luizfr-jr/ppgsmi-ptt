@@ -61,9 +61,10 @@ model Template {
   // Cover page
   aluno            String?
   alunoGenero      String?  // M | F — flexiona o rótulo Aluno/Aluna na capa
-  orientador       String?
-  orientadorGenero String?  // M | F — flexiona Orientador/Orientadora + Prof. Dr./Profa. Dra.
-  coorientador     String?
+  orientador        String?
+  orientadorGenero  String?  // M | F — flexiona Orientador/Orientadora + Prof. Dr./Profa. Dra.
+  coorientador      String?
+  coorientadorGenero String? // M | F — prefixo Prof. Dr./Profa. Dra. na capa
   bancaAvaliadora  String?
   data             String?
 

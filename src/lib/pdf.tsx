@@ -633,9 +633,14 @@ function buildDocData(template: Template, attachments: Attachment[]): DocData {
   }
   const year = isoDate.split('-')[0] || '2026'
 
-  // Coorientador — optional; shown exactly as typed (no gender field for it,
-  // so we don't force a "Prof(a). Dr(a)." prefix that would look awkward).
-  const coorientador = (template.coorientador || '').trim()
+  // Coorientador — optional; prefixed with the academic title based on the
+  // selected treatment, unless the typed name already carries one.
+  const coorientadorNome = (template.coorientador || '').trim()
+  const coorHasTitle = /^\s*(prof|dr|dra|profa)\.?/i.test(coorientadorNome)
+  const coorPrefix = template.coorientadorGenero === 'F' ? 'Profa. Dra. ' : 'Prof. Dr. '
+  const coorientador = (coorientadorNome && !coorHasTitle)
+    ? coorPrefix + coorientadorNome
+    : coorientadorNome
 
   // Gender-aware labels for the cover. Default is masculine (matches legacy
   // templates created before the gender fields existed).

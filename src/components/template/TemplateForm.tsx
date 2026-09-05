@@ -452,15 +452,46 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
             </div>
           </div>
           <div>
-            <label className="label">Coorientador <span className="text-gray-400 text-xs font-normal">(opcional)</span></label>
+            <label className="label">Coorientador(a) <span className="text-gray-400 text-xs font-normal">(opcional)</span></label>
             <input
               type="text"
               className="input"
-              placeholder="Nome completo do coorientador"
+              placeholder="Nome completo (sem 'Prof. Dr.' — adicionado automaticamente)"
               value={template.coorientador || ''}
               onChange={e => update('coorientador', e.target.value)}
               disabled={readOnly}
             />
+            {template.coorientador ? (
+              <div className="mt-2">
+                <span className="text-xs text-gray-500 mb-1 block">Tratamento na capa?</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={readOnly}
+                    onClick={() => update('coorientadorGenero', 'M')}
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-sm border transition-all ${
+                      (template.coorientadorGenero || 'M') === 'M'
+                        ? 'bg-ninma-purple text-white border-ninma-purple'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-ninma-purple'
+                    }`}
+                  >
+                    Prof. Dr.
+                  </button>
+                  <button
+                    type="button"
+                    disabled={readOnly}
+                    onClick={() => update('coorientadorGenero', 'F')}
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-sm border transition-all ${
+                      template.coorientadorGenero === 'F'
+                        ? 'bg-ninma-purple text-white border-ninma-purple'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-ninma-purple'
+                    }`}
+                  >
+                    Profa. Dra.
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
           <div>
             <label className="label">Banca Avaliadora</label>
