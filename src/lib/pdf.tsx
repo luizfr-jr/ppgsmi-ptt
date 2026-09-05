@@ -757,7 +757,7 @@ function LayoutDDocument({ doc, images }: { doc: DocData; images: Images }) {
               <View style={s.coverFieldFull}>
                 <View style={s.coverFieldLbl}>
                   <View style={[s.coverDot, { backgroundColor: C.rose }]} />
-                  <Text>DATA DE SUBMISSÃO</Text>
+                  <Text>DATA DA DEFESA</Text>
                 </View>
                 <Text style={s.coverFieldVal}>{fmtLong(cover.data)}</Text>
               </View>

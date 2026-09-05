@@ -109,7 +109,7 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
   const REQUIRED_FIELDS: { key: keyof Template; label: string }[] = [
     { key: 'aluno',                 label: 'Aluno' },
     { key: 'orientador',            label: 'Orientador' },
-    { key: 'data',                  label: 'Data de submissão' },
+    { key: 'data',                  label: 'Data da defesa' },
     { key: 'tituloPt',              label: 'Q1 — Título do Produto (Português)' },
     { key: 'tituloEn',              label: 'Q1 — Título do Produto (Inglês)' },
     { key: 'linhaPesquisa',         label: 'Q2 — Linha de Pesquisa' },
@@ -504,7 +504,7 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
             />
           </div>
           <div>
-            <label className="label">Data</label>
+            <label className="label">Data da defesa</label>
             <input
               type="date"
               className="input"
