@@ -84,7 +84,7 @@ export function CoordDashboard({ user, templates }: Props) {
             </div>
 
             {/* Stats — adapt to current scope */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
               {(() => {
                 const base = scope === 'mine'
                   ? templates.filter(t => (t as any).advisorId === user.id)
@@ -92,6 +92,7 @@ export function CoordDashboard({ user, templates }: Props) {
                 return [
                   { label: 'Total',      value: base.length,                                          color: 'bg-ninma-teal-light text-ninma-teal-dark' },
                   { label: 'Rascunhos',  value: base.filter(t => t.status === 'RASCUNHO').length,    color: 'bg-gray-100 text-gray-600' },
+                  { label: 'Enviado',    value: base.filter(t => t.status === 'ENVIADO').length,     color: 'bg-ninma-orange-light text-ninma-orange-dark' },
                   { label: 'Em Revisão', value: base.filter(t => t.status === 'REVISAO').length,     color: 'bg-ninma-orange-light text-ninma-orange-dark' },
                   { label: 'Aprovados',  value: base.filter(t => t.status === 'APROVADO').length,    color: 'bg-green-100 text-green-700' },
                 ]

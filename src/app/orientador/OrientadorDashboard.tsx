@@ -40,9 +40,10 @@ export function OrientadorDashboard({ user, templates }: Props) {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
               {[
                 { label: 'Total', value: templates.length, color: 'bg-ninma-teal-light text-ninma-teal-dark' },
+                { label: 'Rascunhos', value: templates.filter(t => t.status === 'RASCUNHO').length, color: 'bg-gray-100 text-gray-600' },
                 { label: 'Enviado', value: templates.filter(t => t.status === 'ENVIADO').length, color: 'bg-ninma-orange-light text-ninma-orange-dark' },
                 { label: 'Em Revisão', value: templates.filter(t => t.status === 'REVISAO').length, color: 'bg-ninma-orange-light text-ninma-orange-dark' },
                 { label: 'Aprovados', value: templates.filter(t => t.status === 'APROVADO').length, color: 'bg-green-100 text-green-700' },
