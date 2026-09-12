@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Header } from '@/components/layout/Header'
 import { Sidebar } from '@/components/layout/Sidebar'
@@ -8,7 +9,7 @@ import { TemplateForm } from '@/components/template/TemplateForm'
 import { TimelineView } from '@/components/template/TimelineView'
 import { CommentPanel } from '@/components/template/CommentPanel'
 import { PWAInstallPrompt } from '@/components/layout/PWAInstallPrompt'
-import { ArrowLeft, User, Users } from 'lucide-react'
+import { ArrowLeft, User, Users, Trash2 } from 'lucide-react'
 import { Template, Comment, Attachment } from '@/types'
 import { markCommentsSeen } from '@/lib/commentSeen'
 
@@ -24,13 +25,34 @@ interface Props {
 }
 
 export function TemplateDetailCoord({ user, template: initialTemplate }: Props) {
+  const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const [template, setTemplate] = useState(initialTemplate)
   const [comments, setComments] = useState<Comment[]>(initialTemplate.comments || [])
   const [events, setEvents] = useState(initialTemplate.events || [])
+  const [deleting, setDeleting] = useState(false)
 
   // Clear the "new comments" badge for this template on this device
   useEffect(() => { markCommentsSeen(initialTemplate.id) }, [initialTemplate.id])
+
+  async function handleDelete() {
+    const label = template.tituloPt || 'Sem título'
+    if (!confirm(`Excluir permanentemente o template "${label}" (aluno: ${template.student?.name || '—'})?\n\nEsta ação NÃO pode ser desfeita.`)) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/templates/${template.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (data.success) {
+        router.push('/coordenacao')
+      } else {
+        alert(data.error || 'Erro ao excluir')
+        setDeleting(false)
+      }
+    } catch {
+      alert('Erro de conexão ao excluir')
+      setDeleting(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-ninma-gray-light flex flex-col">
@@ -45,6 +67,17 @@ export function TemplateDetailCoord({ user, template: initialTemplate }: Props) 
                 Voltar
               </Link>
               <div className="flex items-center gap-3 flex-wrap">
+                {user.role === 'SUPERADMIN' && (
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="flex items-center gap-2 py-2 px-3 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 transition-all text-sm"
+                    title="Excluir template (Super Admin)"
+                  >
+                    <Trash2 size={14} />
+                    {deleting ? 'Excluindo...' : 'Excluir'}
+                  </button>
+                )}
                 <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-gray-100">
                   <User size={14} className="text-ninma-purple" />
                   <span className="text-sm text-ninma-dark">

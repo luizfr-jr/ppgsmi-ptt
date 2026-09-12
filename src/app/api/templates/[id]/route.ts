@@ -257,16 +257,25 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   if (!session) return NextResponse.json({ success: false, error: 'Não autenticado' }, { status: 401 })
 
   const { id } = await params
+  const role = session.user.role
+  const isSuperAdmin = role === 'SUPERADMIN'
 
-  if (session.user.role !== 'ALUNO') {
+  // Only the student owner (of their own draft) or a SUPERADMIN may delete.
+  if (role !== 'ALUNO' && !isSuperAdmin) {
     return NextResponse.json({ success: false, error: 'Sem permissão' }, { status: 403 })
   }
 
   const template = await prisma.template.findUnique({ where: { id } })
-  if (!template || template.studentId !== session.user.id) {
+  if (!template) {
+    return NextResponse.json({ success: false, error: 'Template não encontrado' }, { status: 404 })
+  }
+  // Aluno can only delete their own template; SUPERADMIN can delete any.
+  if (!isSuperAdmin && template.studentId !== session.user.id) {
     return NextResponse.json({ success: false, error: 'Template não encontrado' }, { status: 404 })
   }
 
+  // Comments have no cascade; delete them first. Attachments and events cascade
+  // via the schema (attachment files in storage are left as harmless orphans).
   await prisma.comment.deleteMany({ where: { templateId: id } })
   await prisma.template.delete({ where: { id } })
 
