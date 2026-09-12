@@ -57,6 +57,7 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState<Date | null>(null)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [generatingPDF, setGeneratingPDF] = useState(false)
 
   // Parse JSON arrays
@@ -188,6 +189,36 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
     }
   }
 
+  // Reenvio ao orientador quando o template já está em ENVIADO: salva os
+  // ajustes atuais e redispara o e-mail de aviso, sem alterar o status.
+  async function handleResend() {
+    if (userRole === 'ALUNO') {
+      const missing = findMissing()
+      if (missing.length > 0) {
+        setMissingFields(missing)
+        if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' })
+        return
+      }
+    }
+    setMissingFields([])
+    // Persiste eventuais edições antes de notificar
+    await handleSave()
+    const res = await fetch(`/api/templates/${template.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'ENVIADO', resend: true }),
+    })
+    const data = await res.json()
+    if (data.success) {
+      setSavedAt(new Date())
+      onSaved?.(data.data)
+      setNotice('Reenviado ao orientador. Um novo e-mail de aviso foi disparado.')
+      setTimeout(() => setNotice(''), 6000)
+    } else {
+      setError('Erro ao reenviar')
+    }
+  }
+
   async function handleExportPDF() {
     setGeneratingPDF(true)
     try {
@@ -275,6 +306,7 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
             </span>
           )}
           {saving && <span className="text-xs text-gray-400">Salvando...</span>}
+          {notice && <span className="text-xs text-ninma-teal font-medium flex items-center gap-1"><CheckCircle size={12} />{notice}</span>}
           {error && <span className="text-xs text-ninma-pink">{error}</span>}
         </div>
 
@@ -306,6 +338,17 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
               {(isStudent || !userRole) && template.status === 'REVISAO' && (
                 <button
                   onClick={() => handleStatusChange('ENVIADO')}
+                  className="btn-secondary flex items-center gap-2 py-2 px-4 text-sm"
+                >
+                  <Send size={15} />
+                  Reenviar ao orientador
+                </button>
+              )}
+              {/* Ainda em ENVIADO (orientador não agiu): permite ajustar e
+                  reenviar, redisparando o e-mail de aviso. */}
+              {(isStudent || !userRole) && template.status === 'ENVIADO' && (
+                <button
+                  onClick={handleResend}
                   className="btn-secondary flex items-center gap-2 py-2 px-4 text-sm"
                 >
                   <Send size={15} />

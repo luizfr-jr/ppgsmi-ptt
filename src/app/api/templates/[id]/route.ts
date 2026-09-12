@@ -71,12 +71,18 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       attachments: _attachments,
       events: _events,
       silent: _silent,
+      resend: _resend,
       ...updateData
     } = body
 
     // Admin override: superadmin can move a template through any stage without
     // triggering notification emails (used to regularize legacy templates).
     const silent = _silent === true && session.user.role === 'SUPERADMIN'
+
+    // Resend: re-fire the notification for the CURRENT status even when it did
+    // not change. Used when the aluno adjusts a template still in ENVIADO and
+    // wants to notify the orientador again (e.g. the first e-mail was lost).
+    const resend = _resend === true
 
     // COORDENACAO can only change status — strip everything else.
     if (session.user.role === 'COORDENACAO') {
@@ -91,13 +97,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const fromStatus = template.status
     const toStatus: string | undefined = typeof updateData.status === 'string' ? updateData.status : undefined
     const statusChanged = toStatus !== undefined && toStatus !== fromStatus
+    // Fire the notification when the status actually changes OR when the caller
+    // explicitly asks to resend the notification for the current status.
+    const shouldNotify = statusChanged || (resend && !silent)
+    const notifyStatus = statusChanged ? toStatus : fromStatus
 
     const updated = await prisma.template.update({
       where: { id },
       data: updateData,
     })
 
-    if (statusChanged && toStatus) {
+    if (shouldNotify && notifyStatus) {
       // Run AFTER the response is sent, but via after() so Vercel keeps the
       // serverless function alive until it completes. A plain fire-and-forget
       // (void ...) would be killed when the function freezes, silently dropping
@@ -105,11 +115,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       after(recordStatusTransition({
         templateId: id,
         fromStatus,
-        toStatus,
+        toStatus: notifyStatus,
         actorId: session.user.id,
         actorName: session.user.name || session.user.email,
         actorRole: session.user.role,
         silent,
+        // On a pure resend there is no state change, so skip writing a timeline
+        // event — just re-send the e-mail for the current status.
+        logEvent: statusChanged,
       }))
     }
 
@@ -132,21 +145,25 @@ async function recordStatusTransition(params: {
   actorName: string
   actorRole: string
   silent?: boolean
+  logEvent?: boolean
 }) {
-  try {
-    await prisma.templateEvent.create({
-      data: {
-        templateId: params.templateId,
-        actorId:    params.actorId,
-        actorName:  params.actorName,
-        actorRole:  params.actorRole,
-        fromStatus: params.fromStatus,
-        toStatus:   params.toStatus,
-        note:       params.silent ? 'Ajuste manual pelo Super Admin (sem notificação)' : null,
-      },
-    })
-  } catch (err) {
-    console.error('[workflow] failed to log TemplateEvent:', err)
+  // logEvent defaults to true; a pure resend passes false (no state change).
+  if (params.logEvent !== false) {
+    try {
+      await prisma.templateEvent.create({
+        data: {
+          templateId: params.templateId,
+          actorId:    params.actorId,
+          actorName:  params.actorName,
+          actorRole:  params.actorRole,
+          fromStatus: params.fromStatus,
+          toStatus:   params.toStatus,
+          note:       params.silent ? 'Ajuste manual pelo Super Admin (sem notificação)' : null,
+        },
+      })
+    } catch (err) {
+      console.error('[workflow] failed to log TemplateEvent:', err)
+    }
   }
 
   // Admin override: log the timeline event but skip all notification emails.

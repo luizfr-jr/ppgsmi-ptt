@@ -44,8 +44,13 @@ export function TemplateDetailStudent({ user, template: initialTemplate }: Props
   // Clear the "new comments" badge for this template on this device
   useEffect(() => { markCommentsSeen(initialTemplate.id) }, [initialTemplate.id])
 
-  const canEdit = template.status === 'RASCUNHO' || template.status === 'REVISAO'
-  const canSubmit = template.status === 'RASCUNHO' || template.status === 'REVISAO'
+  // O aluno pode editar/enviar enquanto o produto ainda está com ele ou com o
+  // orientador (RASCUNHO, REVISAO ou ENVIADO). Só trava depois que segue para a
+  // coordenação (AGUARDANDO_COORDENACAO) ou é aprovado (APROVADO). Manter o
+  // ENVIADO editável permite ajustar e reenviar caso o orientador ainda não
+  // tenha agido (ex.: e-mail de aviso não chegou).
+  const canEdit = ['RASCUNHO', 'REVISAO', 'ENVIADO'].includes(template.status)
+  const canSubmit = ['RASCUNHO', 'REVISAO', 'ENVIADO'].includes(template.status)
 
   async function handleDelete() {
     if (!confirm('Tem certeza que deseja excluir este template? Esta ação não pode ser desfeita.')) return
