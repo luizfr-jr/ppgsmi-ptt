@@ -57,6 +57,9 @@ model Template {
   status    String   @default("RASCUNHO") // RASCUNHO | ENVIADO | AGUARDANDO_COORDENACAO | APROVADO | REVISAO
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  // Último lembrete automático enviado (template parado > 7 dias). Usado para
+  // não repetir o aviso mais de uma vez por semana.
+  lastReminderAt DateTime?
 
   // Cover page
   aluno            String?

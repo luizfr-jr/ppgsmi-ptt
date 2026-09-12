@@ -216,6 +216,49 @@ export async function sendTemplateRevisionRequestedEmail(params: {
   })
 }
 
+/**
+ * Lembrete de template parado. Enviado automaticamente pelo verificador diário
+ * quando um template fica na mesma etapa (ENVIADO ou AGUARDANDO_COORDENACAO)
+ * por mais de 7 dias sem ação do responsável.
+ */
+export async function sendTemplateReminderEmail(params: {
+  to: string | string[]
+  targetRole: 'ORIENTADOR' | 'COORDENACAO'
+  alunoName: string
+  templateTitle: string
+  templateId: string
+  daysWaiting: number
+}) {
+  const to = Array.isArray(params.to) ? params.to.filter(Boolean) : params.to
+  if (Array.isArray(to) && to.length === 0) return
+
+  const isAdvisor = params.targetRole === 'ORIENTADOR'
+  const url = isAdvisor
+    ? `${baseUrl()}/orientador/template/${params.templateId}`
+    : `${baseUrl()}/coordenacao/template/${params.templateId}`
+
+  const acao = isAdvisor
+    ? 'revisar e aprovar (ou solicitar ajustes)'
+    : 'avaliar e liberar para impressão (ou solicitar ajustes)'
+
+  await sendMail({
+    to,
+    subject: `Lembrete: template parado há ${params.daysWaiting} dias — ${params.alunoName}`,
+    html: renderShell({
+      title: 'Template aguardando sua análise',
+      intro: `
+        <p>Olá,</p>
+        <p>O template <em>"${params.templateTitle}"</em>, do aluno <strong>${params.alunoName}</strong>,
+        está aguardando sua análise há <strong>${params.daysWaiting} dias</strong> sem movimentação.</p>
+        <p>Quando puder, acesse o sistema para ${acao}.</p>
+      `,
+      cta: url,
+      ctaLabel: isAdvisor ? 'Revisar template' : 'Avaliar na coordenação',
+      footer: 'Este é um lembrete automático. Enquanto o template continuar parado, um novo aviso será enviado a cada 7 dias.',
+    }),
+  })
+}
+
 // ─── Account lifecycle emails ──────────────────────────────────────────────
 
 const ROLE_LABELS: Record<string, string> = {
