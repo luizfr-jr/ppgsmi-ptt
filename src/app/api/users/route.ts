@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { sendWelcomeEmail } from '@/lib/email'
@@ -82,13 +82,13 @@ export async function POST(req: NextRequest) {
       select: { id: true, name: true, email: true, role: true, createdAt: true },
     })
 
-    // Fire-and-forget welcome email — failures are logged inside sendMail
-    void sendWelcomeEmail({
+    // Welcome email after the response — after() keeps the function alive to send
+    after(sendWelcomeEmail({
       to: user.email,
       userName: user.name,
       role: user.role,
       createdByAdmin: true,
-    })
+    }))
 
     return NextResponse.json({ success: true, data: user }, { status: 201 })
   } catch (error) {

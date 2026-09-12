@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import {
@@ -93,15 +93,18 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     })
 
     if (statusChanged && toStatus) {
-      // Fire-and-forget — don't block the response. Any error is logged inside.
-      void recordStatusTransition({
+      // Run AFTER the response is sent, but via after() so Vercel keeps the
+      // serverless function alive until it completes. A plain fire-and-forget
+      // (void ...) would be killed when the function freezes, silently dropping
+      // the notification email.
+      after(recordStatusTransition({
         templateId: id,
         fromStatus,
         toStatus,
         actorId: session.user.id,
         actorName: session.user.name || session.user.email,
         actorRole: session.user.role,
-      })
+      }))
     }
 
     return NextResponse.json({ success: true, data: updated })

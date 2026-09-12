@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { sendNewCommentEmail } from '@/lib/email'
@@ -49,15 +49,16 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    // Notify the other participants by email (fire-and-forget — never blocks the response)
-    void notifyParticipants({
+    // Notify participants after the response — via after() so Vercel keeps the
+    // function alive to finish the send (a plain void would be killed on freeze).
+    after(notifyParticipants({
       template,
       authorId: session.user.id,
       authorName: session.user.name || session.user.email,
       authorRole: session.user.role,
       content,
       fieldRef: fieldRef || null,
-    })
+    }))
 
     return NextResponse.json({ success: true, data: comment }, { status: 201 })
   } catch (error) {

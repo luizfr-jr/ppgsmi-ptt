@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { verifyOTP, getOrCreateUser, createSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { sendWelcomeEmail, sendNewSignupNotification } from '@/lib/email'
@@ -28,15 +28,16 @@ export async function POST(req: NextRequest) {
     await createSession(user.id, user.email, user.role as any, user.name)
 
     if (!existedBefore) {
-      // Welcome e-mail to the new user (fire-and-forget, never blocks login)
-      void sendWelcomeEmail({
+      // Both emails run via after() so Vercel keeps the function alive to send
+      // them (a plain void would be killed once the login response returns).
+      after(sendWelcomeEmail({
         to: user.email,
         userName: user.name,
         role: user.role,
         createdByAdmin: false,
-      })
+      }))
       // Notify all super-admins + coordenação that a new account appeared
-      void (async () => {
+      after((async () => {
         try {
           const admins = await prisma.user.findMany({
             where: { role: { in: ['SUPERADMIN', 'COORDENACAO'] } },
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
         } catch (err) {
           console.error('[signup] failed to notify admins:', err)
         }
-      })()
+      })())
     }
 
     // Redirect based on role
