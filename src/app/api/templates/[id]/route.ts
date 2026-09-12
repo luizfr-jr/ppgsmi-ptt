@@ -152,13 +152,50 @@ async function recordStatusTransition(params: {
     const alunoName = tpl.student?.name || tpl.aluno || 'Aluno(a)'
 
     // RASCUNHO → ENVIADO : notify orientador
-    if (params.toStatus === 'ENVIADO' && tpl.advisor?.email) {
-      await sendTemplateSubmittedEmail({
-        to: tpl.advisor.email,
-        alunoName,
-        templateTitle: title,
-        templateId: params.templateId,
-      })
+    if (params.toStatus === 'ENVIADO') {
+      let advisorEmail = tpl.advisor?.email || null
+
+      // Self-heal: if the template has no linked advisor (advisorId null), fall
+      // back to the student's profile advisor and persist the link. This covers
+      // templates created before the student picked an advisor, or where only
+      // the advisor *name* (free text) was filled in on the cover.
+      if (!advisorEmail && tpl.studentId) {
+        const student = await prisma.user.findUnique({
+          where: { id: tpl.studentId },
+          select: { advisorId: true, advisor: { select: { email: true } } },
+        })
+        if (student?.advisor?.email && student.advisorId) {
+          advisorEmail = student.advisor.email
+          await prisma.template.update({
+            where: { id: params.templateId },
+            data: { advisorId: student.advisorId },
+          }).catch(err => console.error('[workflow] failed to backfill advisorId:', err))
+        }
+      }
+
+      if (advisorEmail) {
+        await sendTemplateSubmittedEmail({
+          to: advisorEmail,
+          alunoName,
+          templateTitle: title,
+          templateId: params.templateId,
+        })
+      } else {
+        // No advisor could be resolved — never fail silently. Notify the
+        // coordenação so a submission is never lost, and log for diagnosis.
+        console.error('[workflow] template submitted with NO advisor linked', { templateId: params.templateId, aluno: alunoName })
+        const coords = await prisma.user.findMany({
+          where: { role: { in: ['COORDENACAO', 'SUPERADMIN'] } },
+          select: { email: true },
+        })
+        await sendTemplateApprovedByAdvisorEmail({
+          to: coords.map(c => c.email).filter(Boolean),
+          alunoName,
+          orientadorName: tpl.orientador || 'Orientador não vinculado',
+          templateTitle: `${title} (ATENÇÃO: aluno sem orientador vinculado)`,
+          templateId: params.templateId,
+        }).catch(() => {})
+      }
     }
 
     // ENVIADO → AGUARDANDO_COORDENACAO : notify all coordenadores
