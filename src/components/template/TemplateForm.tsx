@@ -153,9 +153,11 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
     return REQUIRED_FIELDS.filter(f => !isFieldFilled(f.key)).map(f => f.label)
   }
 
-  async function handleStatusChange(newStatus: TemplateStatus) {
-    // Block aluno from submitting an incomplete template
-    if (newStatus === 'ENVIADO' && userRole === 'ALUNO') {
+  // silent=true (admin manual override) skips required-field validation and
+  // suppresses notification emails — used to close out legacy templates.
+  async function handleStatusChange(newStatus: TemplateStatus, silent = false) {
+    // Block aluno from submitting an incomplete template (not for admin override)
+    if (!silent && newStatus === 'ENVIADO' && userRole === 'ALUNO') {
       const missing = findMissing()
       if (missing.length > 0) {
         setMissingFields(missing)
@@ -168,7 +170,7 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
     const res = await fetch(`/api/templates/${template.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus }),
+      body: JSON.stringify({ status: newStatus, silent }),
     })
     const data = await res.json()
     if (data.success) {
@@ -354,6 +356,44 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
           )}
         </div>
       </div>
+
+      {/* Painel de override do super admin — mover para qualquer etapa sem e-mail */}
+      {userRole === 'SUPERADMIN' && (
+        <div className="card border-2 border-ninma-purple bg-ninma-purple-light/30">
+          <div className="flex items-start gap-3 mb-3">
+            <span className="text-lg leading-none">🛠️</span>
+            <div>
+              <div className="font-bold text-ninma-purple text-sm">Controle de status (Super Admin)</div>
+              <div className="text-xs text-gray-600 mt-0.5">
+                Move o template para qualquer etapa manualmente, <strong>sem enviar e-mails</strong>. Use para regularizar templates antigos já aprovados fora do sistema.
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-gray-500">Definir status para:</span>
+            {([
+              ['RASCUNHO', 'Rascunho'],
+              ['ENVIADO', 'Em revisão (orientador)'],
+              ['AGUARDANDO_COORDENACAO', 'Aguardando coordenação'],
+              ['APROVADO', 'Aprovado'],
+              ['REVISAO', 'Em revisão (aluno)'],
+            ] as [TemplateStatus, string][]).map(([value, label]) => (
+              <button
+                key={value}
+                onClick={() => handleStatusChange(value, true)}
+                disabled={template.status === value}
+                className={`py-1.5 px-3 rounded-lg text-xs font-medium border transition-all ${
+                  template.status === value
+                    ? 'bg-ninma-purple text-white border-ninma-purple cursor-default'
+                    : 'bg-white text-gray-700 border-gray-200 hover:border-ninma-purple hover:text-ninma-purple'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* CAPA */}
       <div className="card">

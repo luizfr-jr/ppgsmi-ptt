@@ -70,8 +70,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       comments: _comments,
       attachments: _attachments,
       events: _events,
+      silent: _silent,
       ...updateData
     } = body
+
+    // Admin override: superadmin can move a template through any stage without
+    // triggering notification emails (used to regularize legacy templates).
+    const silent = _silent === true && session.user.role === 'SUPERADMIN'
 
     // COORDENACAO can only change status — strip everything else.
     if (session.user.role === 'COORDENACAO') {
@@ -104,6 +109,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         actorId: session.user.id,
         actorName: session.user.name || session.user.email,
         actorRole: session.user.role,
+        silent,
       }))
     }
 
@@ -125,6 +131,7 @@ async function recordStatusTransition(params: {
   actorId: string
   actorName: string
   actorRole: string
+  silent?: boolean
 }) {
   try {
     await prisma.templateEvent.create({
@@ -135,11 +142,15 @@ async function recordStatusTransition(params: {
         actorRole:  params.actorRole,
         fromStatus: params.fromStatus,
         toStatus:   params.toStatus,
+        note:       params.silent ? 'Ajuste manual pelo Super Admin (sem notificação)' : null,
       },
     })
   } catch (err) {
     console.error('[workflow] failed to log TemplateEvent:', err)
   }
+
+  // Admin override: log the timeline event but skip all notification emails.
+  if (params.silent) return
 
   try {
     const tpl = await prisma.template.findUnique({
