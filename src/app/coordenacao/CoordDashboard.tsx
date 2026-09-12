@@ -8,19 +8,13 @@ import { PWAInstallPrompt } from '@/components/layout/PWAInstallPrompt'
 import { FileText, Search, Eye, Users, UsersRound } from 'lucide-react'
 import { Template } from '@/types'
 import { NewCommentsBadge } from '@/components/template/NewCommentsBadge'
+import { STATUS_CONFIG, STATUS_ORDER, statusLabel, statusBadgeClass } from '@/lib/status'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 interface Props {
   user: { id: string; email: string; name: string | null; role: string }
   templates: Template[]
-}
-
-const statusConfig = {
-  RASCUNHO: { label: 'Rascunho', className: 'badge-rascunho' },
-  ENVIADO: { label: 'Enviado', className: 'badge-enviado' },
-  REVISAO: { label: 'Em Revisão', className: 'badge-revisao' },
-  APROVADO: { label: 'Aprovado', className: 'badge-aprovado' },
 }
 
 export function CoordDashboard({ user, templates }: Props) {
@@ -128,10 +122,9 @@ export function CoordDashboard({ user, templates }: Props) {
                   onChange={e => setFilterStatus(e.target.value)}
                 >
                   <option value="">Todos os status</option>
-                  <option value="RASCUNHO">Rascunho</option>
-                  <option value="ENVIADO">Enviado</option>
-                  <option value="REVISAO">Em Revisão</option>
-                  <option value="APROVADO">Aprovado</option>
+                  {STATUS_ORDER.map(s => (
+                    <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -145,13 +138,12 @@ export function CoordDashboard({ user, templates }: Props) {
             ) : (
               <div className="space-y-3">
                 {filtered.map(template => {
-                  const status = statusConfig[template.status as keyof typeof statusConfig] || statusConfig.RASCUNHO
                   return (
                     <div key={template.id} className="card hover:shadow-md transition-shadow">
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className={status.className}>{status.label}</span>
+                            <span className={statusBadgeClass(template.status)}>{statusLabel(template.status)}</span>
                             {(template.comments?.length || 0) > 0 && (
                               <span className="text-xs text-ninma-purple bg-ninma-purple-light px-2 py-0.5 rounded-full">
                                 {template.comments?.length} comentário(s)

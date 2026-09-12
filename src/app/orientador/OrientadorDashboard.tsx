@@ -8,19 +8,13 @@ import { PWAInstallPrompt } from '@/components/layout/PWAInstallPrompt'
 import { FileText, Search, Edit2 } from 'lucide-react'
 import { Template } from '@/types'
 import { NewCommentsBadge } from '@/components/template/NewCommentsBadge'
+import { statusLabel, statusBadgeClass } from '@/lib/status'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 interface Props {
   user: { id: string; email: string; name: string | null; role: string }
   templates: Template[]
-}
-
-const statusConfig = {
-  RASCUNHO: { label: 'Rascunho', className: 'badge-rascunho' },
-  ENVIADO: { label: 'Enviado', className: 'badge-enviado' },
-  REVISAO: { label: 'Em Revisão', className: 'badge-revisao' },
-  APROVADO: { label: 'Aprovado', className: 'badge-aprovado' },
 }
 
 export function OrientadorDashboard({ user, templates }: Props) {
@@ -46,10 +40,11 @@ export function OrientadorDashboard({ user, templates }: Props) {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               {[
                 { label: 'Total', value: templates.length, color: 'bg-ninma-teal-light text-ninma-teal-dark' },
-                { label: 'Pendentes', value: templates.filter(t => t.status === 'ENVIADO').length, color: 'bg-ninma-orange-light text-ninma-orange-dark' },
+                { label: 'Enviado', value: templates.filter(t => t.status === 'ENVIADO').length, color: 'bg-ninma-orange-light text-ninma-orange-dark' },
+                { label: 'Em Revisão', value: templates.filter(t => t.status === 'REVISAO').length, color: 'bg-ninma-orange-light text-ninma-orange-dark' },
                 { label: 'Aprovados', value: templates.filter(t => t.status === 'APROVADO').length, color: 'bg-green-100 text-green-700' },
               ].map(stat => (
                 <div key={stat.label} className={`card ${stat.color} border-0`}>
@@ -86,13 +81,12 @@ export function OrientadorDashboard({ user, templates }: Props) {
             ) : (
               <div className="space-y-3">
                 {filtered.map(template => {
-                  const status = statusConfig[template.status as keyof typeof statusConfig] || statusConfig.RASCUNHO
                   return (
                     <div key={template.id} className="card hover:shadow-md transition-shadow">
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className={status.className}>{status.label}</span>
+                            <span className={statusBadgeClass(template.status)}>{statusLabel(template.status)}</span>
                             <NewCommentsBadge
                               templateId={template.id}
                               comments={(template as any).comments}

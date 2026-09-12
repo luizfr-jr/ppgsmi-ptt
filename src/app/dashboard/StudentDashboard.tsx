@@ -18,9 +18,12 @@ interface Props {
   templates: Template[]
 }
 
+// Rótulos/estilos vêm de @/lib/status (fonte única); aqui só acrescentamos o
+// ícone de cada etapa, específico da visão do aluno.
 const statusConfig = {
   RASCUNHO: { label: 'Rascunho', icon: <Clock size={14} />, className: 'badge-rascunho' },
   ENVIADO: { label: 'Enviado', icon: <CheckCircle size={14} />, className: 'badge-enviado' },
+  AGUARDANDO_COORDENACAO: { label: 'Aguardando coordenação', icon: <Clock size={14} />, className: 'badge-aguardando' },
   REVISAO: { label: 'Em Revisão', icon: <AlertCircle size={14} />, className: 'badge-revisao' },
   APROVADO: { label: 'Aprovado', icon: <CheckCircle size={14} />, className: 'badge-aprovado' },
 }

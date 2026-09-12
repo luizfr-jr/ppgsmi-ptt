@@ -9,10 +9,12 @@ export default async function OrientadorPage() {
   const session = await getSession()
   if (!session || !ALLOWED.includes(session.user.role)) redirect('/')
 
-  // SUPERADMIN sees all templates; others see only their own advisees
-  const isSuperAdmin = session.user.role === 'SUPERADMIN'
+  // "Meus Orientandos" sempre mostra apenas os templates em que o usuário
+  // logado é o orientador — inclusive para SUPERADMIN, que também pode ser
+  // orientador. A visão completa do programa fica em "Todos os Templates"
+  // (tela da coordenação).
   const templates = await prisma.template.findMany({
-    where: isSuperAdmin ? undefined : { advisorId: session.user.id },
+    where: { advisorId: session.user.id },
     include: {
       student: { select: { id: true, name: true, email: true } },
       comments: true,
