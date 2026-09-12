@@ -189,9 +189,11 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
     }
   }
 
-  // Reenvio ao orientador quando o template já está em ENVIADO: salva os
-  // ajustes atuais e redispara o e-mail de aviso, sem alterar o status.
-  async function handleResend() {
+  // Redispara o e-mail de aviso da ETAPA ATUAL, sem alterar o status. Usado
+  // pelo aluno quando o template segue em ENVIADO (orientador não agiu) e pelo
+  // superadmin para reenviar o aviso de qualquer etapa (ex.: e-mail perdido).
+  // successMsg permite personalizar a confirmação conforme quem reenvia.
+  async function handleResend(successMsg = 'E-mail de aviso reenviado.') {
     if (userRole === 'ALUNO') {
       const missing = findMissing()
       if (missing.length > 0) {
@@ -201,18 +203,18 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
       }
     }
     setMissingFields([])
-    // Persiste eventuais edições antes de notificar
-    await handleSave()
+    // Persiste eventuais edições antes de notificar (só quando pode editar)
+    if (!readOnly) await handleSave()
     const res = await fetch(`/api/templates/${template.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'ENVIADO', resend: true }),
+      body: JSON.stringify({ status: template.status, resend: true }),
     })
     const data = await res.json()
     if (data.success) {
       setSavedAt(new Date())
       onSaved?.(data.data)
-      setNotice('Reenviado ao orientador. Um novo e-mail de aviso foi disparado.')
+      setNotice(successMsg)
       setTimeout(() => setNotice(''), 6000)
     } else {
       setError('Erro ao reenviar')
@@ -348,7 +350,7 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
                   reenviar, redisparando o e-mail de aviso. */}
               {(isStudent || !userRole) && template.status === 'ENVIADO' && (
                 <button
-                  onClick={handleResend}
+                  onClick={() => handleResend('Reenviado ao orientador. Um novo e-mail de aviso foi disparado.')}
                   className="btn-secondary flex items-center gap-2 py-2 px-4 text-sm"
                 >
                   <Send size={15} />
@@ -435,6 +437,22 @@ export function TemplateForm({ template: initialTemplate, attachments = [], read
               </button>
             ))}
           </div>
+
+          {/* Reenvio do e-mail de aviso da etapa atual (COM envio de e-mail,
+              diferente dos botões acima que são silenciosos). Útil quando o
+              aviso automático não chegou ao destinatário. */}
+          {template.status !== 'RASCUNHO' && (
+            <div className="mt-3 pt-3 border-t border-ninma-purple/20 flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-gray-500">Aviso não chegou?</span>
+              <button
+                onClick={() => handleResend('E-mail de aviso da etapa atual reenviado.')}
+                className="py-1.5 px-3 rounded-lg text-xs font-medium border border-ninma-teal text-ninma-teal bg-white hover:bg-ninma-teal hover:text-white transition-all flex items-center gap-1.5"
+              >
+                <Send size={13} />
+                Reenviar e-mail de aviso desta etapa
+              </button>
+            </div>
+          )}
         </div>
       )}
 
